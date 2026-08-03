@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Remindly",
+    "slug": "remindly-mobile-app",
+    "version": "1.0.0",
+    "scheme": "remindly",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "plugins": [
+      "expo-router"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.remindly.mobile"
+    },
+    "android": {
+      "package": "com.remindly.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#1E1B4B",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
