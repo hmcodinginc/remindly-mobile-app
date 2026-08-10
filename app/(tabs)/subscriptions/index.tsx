@@ -16,6 +16,7 @@ import GlassCard from '../../../components/GlassCard';
 import GlassModal from '../../../components/GlassModal';
 import GlassInput from '../../../components/GlassInput';
 import GlassButton from '../../../components/GlassButton';
+import { confirmDelete } from '../../../utils/confirmDelete';
 
 const CATEGORIES = ['All', 'Entertainment', 'Music', 'Developer Tools', 'Cloud Storage', 'Utilities'];
 const CYCLES: BillingCycle[] = ['monthly', 'yearly', 'weekly', 'quarterly'];
@@ -118,19 +119,12 @@ export default function SubscriptionsScreen() {
   };
 
   const handleDelete = (id: string, name: string) => {
-    Alert.alert(
+    confirmDelete(
       'Delete Subscription',
       `Are you sure you want to delete ${name}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            await deleteSubscription(id);
-          },
-        },
-      ]
+      async () => {
+        await deleteSubscription(id);
+      }
     );
   };
 

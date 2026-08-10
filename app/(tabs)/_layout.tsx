@@ -98,13 +98,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="routines/index"
         options={{
-          title: 'Habits',
-          headerTitle: 'Habit & Routines',
-          tabBarIcon: ({ color, size, focused }) => (
-            <View style={focused ? styles.activeIconGlow : null}>
-              <Ionicons name={focused ? "flame" : "flame-outline"} size={size} color={color} />
-            </View>
-          ),
+          href: null,
+          headerShown: false,
         }}
       />
       <Tabs.Screen

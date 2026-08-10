@@ -17,6 +17,7 @@ import GlassModal from '../../../components/GlassModal';
 import GlassInput from '../../../components/GlassInput';
 import GlassButton from '../../../components/GlassButton';
 import { PriorityColors } from '../../../theme/colors';
+import { confirmDelete } from '../../../utils/confirmDelete';
 
 const STATUS_FILTERS: Array<{ label: string; value: 'all' | 'pending' | 'overdue' | 'completed' }> = [
   { label: 'All', value: 'all' },
@@ -110,10 +111,9 @@ export default function TasksScreen() {
   };
 
   const handleDelete = (id: string, taskTitle: string) => {
-    Alert.alert('Delete Task', `Are you sure you want to delete "${taskTitle}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => await deleteTask(id) },
-    ]);
+    confirmDelete('Delete Task', `Are you sure you want to delete "${taskTitle}"?`, async () => {
+      await deleteTask(id);
+    });
   };
 
   const triggerOverdueAlert = async (task: Task) => {

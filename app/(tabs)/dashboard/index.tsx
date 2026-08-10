@@ -12,11 +12,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useSubscriptionStore } from '../../../store/useSubscriptionStore';
 import { useTaskStore, isTaskOverdue } from '../../../store/useTaskStore';
-import { useRoutineStore } from '../../../store/useRoutineStore';
 import { useNotificationStore } from '../../../store/useNotificationStore';
 import RemindlyLogo from '../../../components/RemindlyLogo';
 import GlassCard from '../../../components/GlassCard';
-import GlassButton from '../../../components/GlassButton';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -25,12 +23,11 @@ export default function DashboardScreen() {
   const user = useAuthStore((state) => state.user);
   const { subscriptions, getTotalMonthlySpend, getUpcomingRenewals, fetchSubscriptions } = useSubscriptionStore();
   const { tasks, toggleTaskStatus, getOverdueTasksCount, fetchTasks } = useTaskStore();
-  const { routines, habits, toggleHabitCompletion, fetchRoutines } = useRoutineStore();
   const unreadNotifs = useNotificationStore((state) => state.unreadCount);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchSubscriptions(), fetchTasks(), fetchRoutines()]);
+    await Promise.all([fetchSubscriptions(), fetchTasks()]);
     setRefreshing(false);
   };
 
@@ -40,7 +37,6 @@ export default function DashboardScreen() {
   const oneWeekRenewals = getUpcomingRenewals(7);
   const overdueCount = getOverdueTasksCount();
   const pendingTasks = tasks.filter((t) => t.status !== 'completed');
-  const todayHabits = habits.slice(0, 4);
 
   return (
     <ScrollView
@@ -48,16 +44,16 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A78BFA" />}
     >
-      {/* Header Welcome Glass Card */}
+      {/* Welcome Header Glass Card */}
       <GlassCard glow style={styles.welcomeCard}>
         <View style={styles.welcomeRow}>
           <View style={styles.logoMargin}>
             <RemindlyLogo size={54} showBackground={true} />
           </View>
           <View style={styles.welcomeTextGroup}>
-            <Text style={styles.greetingText}>Hello, {user?.name || 'User'} 👋</Text>
+            <Text style={styles.greetingText}>Welcome, {user?.name || 'User'} 👋</Text>
             <Text style={styles.welcomeSubtext}>
-              {user?.emailVerified ? 'Verified Account' : 'Free Account'} • Timezone Aware Reminders
+              {user?.emailVerified ? 'Verified Account' : 'Free Plan'} • Smart Reminders
             </Text>
           </View>
           <TouchableOpacity
@@ -74,7 +70,7 @@ export default function DashboardScreen() {
         </View>
       </GlassCard>
 
-      {/* Alert Banner: 1-Week Renewal Warning */}
+      {/* 1-Week Renewal Warning Banner */}
       {oneWeekRenewals.length > 0 && (
         <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/subscriptions')}>
           <GlassCard style={styles.alertBanner} glow>
@@ -94,7 +90,7 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Alert Banner: Overdue Tasks Warning */}
+      {/* Overdue Tasks Banner */}
       {overdueCount > 0 && (
         <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/tasks')}>
           <GlassCard style={styles.overdueBanner} glow>
@@ -105,7 +101,7 @@ export default function DashboardScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.overdueBannerTitle}>⚠️ {overdueCount} Task(s) Overdue</Text>
                 <Text style={styles.overdueBannerText}>
-                  Tap to view and mark complete or reschedule.
+                  Tap to view and complete or reschedule.
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
@@ -114,19 +110,19 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Financial & Task Metrics Grid */}
+      {/* Key Financial & Task Metrics Grid */}
       <View style={styles.statsRow}>
         <GlassCard style={styles.statCard}>
-          <View style={[styles.statIconBg, { backgroundColor: 'rgba(99, 102, 241, 0.2)' }]}>
+          <View style={[styles.statIconBg, { backgroundColor: 'rgba(99, 102, 241, 0.25)' }]}>
             <Ionicons name="wallet" size={20} color="#818CF8" />
           </View>
           <Text style={styles.statValue}>${monthlyTotal.toFixed(2)}</Text>
           <Text style={styles.statLabel}>Monthly Cost</Text>
-          <Text style={styles.statSublabel}>${annualTotal.toFixed(0)}/yr estimated</Text>
+          <Text style={styles.statSublabel}>${annualTotal.toFixed(0)}/yr est.</Text>
         </GlassCard>
 
         <GlassCard style={styles.statCard}>
-          <View style={[styles.statIconBg, { backgroundColor: 'rgba(245, 158, 11, 0.2)' }]}>
+          <View style={[styles.statIconBg, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
             <Ionicons name="time" size={20} color="#FBBF24" />
           </View>
           <Text style={styles.statValue}>{upcomingRenewals.length}</Text>
@@ -135,7 +131,7 @@ export default function DashboardScreen() {
         </GlassCard>
 
         <GlassCard style={styles.statCard}>
-          <View style={[styles.statIconBg, { backgroundColor: 'rgba(52, 211, 153, 0.2)' }]}>
+          <View style={[styles.statIconBg, { backgroundColor: 'rgba(52, 211, 153, 0.25)' }]}>
             <Ionicons name="checkbox" size={20} color="#34D399" />
           </View>
           <Text style={styles.statValue}>{pendingTasks.length}</Text>
@@ -147,25 +143,18 @@ export default function DashboardScreen() {
       {/* Quick Action Navigation */}
       <Text style={styles.sectionTitle}>Quick Actions</Text>
       <View style={styles.quickActionsGrid}>
-        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/(tabs)/subscriptions')}>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/subscription/create')}>
           <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(99, 102, 241, 0.25)' }]}>
             <Ionicons name="card-outline" size={22} color="#818CF8" />
           </View>
-          <Text style={styles.quickActionLabel}>Subscriptions</Text>
+          <Text style={styles.quickActionLabel}>+ Subscription</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/(tabs)/tasks')}>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/task/create')}>
           <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(52, 211, 153, 0.25)' }]}>
             <Ionicons name="add-circle-outline" size={22} color="#34D399" />
           </View>
-          <Text style={styles.quickActionLabel}>Add Task</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/(tabs)/routines')}>
-          <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
-            <Ionicons name="flame-outline" size={22} color="#FBBF24" />
-          </View>
-          <Text style={styles.quickActionLabel}>Habits & Streaks</Text>
+          <Text style={styles.quickActionLabel}>+ Task</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/analytics' as any)}>
@@ -173,6 +162,13 @@ export default function DashboardScreen() {
             <Ionicons name="bar-chart-outline" size={22} color="#A78BFA" />
           </View>
           <Text style={styles.quickActionLabel}>Reports</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/(tabs)/notifications')}>
+          <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
+            <Ionicons name="notifications-outline" size={22} color="#FBBF24" />
+          </View>
+          <Text style={styles.quickActionLabel}>Alerts</Text>
         </TouchableOpacity>
       </View>
 
@@ -220,7 +216,7 @@ export default function DashboardScreen() {
           <Text style={styles.emptyText}>All tasks completed for today! ✨</Text>
         </GlassCard>
       ) : (
-        pendingTasks.slice(0, 3).map((t) => {
+        pendingTasks.slice(0, 4).map((t) => {
           const overdue = isTaskOverdue(t);
           return (
             <GlassCard key={t.id} style={styles.itemCard}>
@@ -245,40 +241,6 @@ export default function DashboardScreen() {
           );
         })
       )}
-
-      {/* Section: Daily Habit Streaks */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Daily Habit Streaks</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/routines')}>
-          <Text style={styles.seeAllText}>View All ({habits.length})</Text>
-        </TouchableOpacity>
-      </View>
-      {todayHabits.map((h) => {
-        const isDoneToday = h.last_completed_date === new Date().toISOString().split('T')[0];
-        return (
-          <GlassCard key={h.id} style={styles.itemCard}>
-            <View style={styles.itemRow}>
-              <TouchableOpacity onPress={() => toggleHabitCompletion(h.id)}>
-                <Ionicons
-                  name={isDoneToday ? 'checkmark-circle' : 'ellipse-outline'}
-                  size={26}
-                  color={isDoneToday ? '#34D399' : '#64748B'}
-                />
-              </TouchableOpacity>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.itemName}>{h.title}</Text>
-                <Text style={styles.itemMeta}>
-                  {h.streak_count} day streak • Best: {h.best_streak} days
-                </Text>
-              </View>
-              <View style={styles.streakBadge}>
-                <Ionicons name="flame" size={16} color="#FBBF24" />
-                <Text style={styles.streakText}>{h.streak_count}</Text>
-              </View>
-            </View>
-          </GlassCard>
-        );
-      })}
     </ScrollView>
   );
 }
@@ -509,21 +471,5 @@ const styles = StyleSheet.create({
   },
   checkboxBtn: {
     padding: 2,
-  },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    gap: 4,
-  },
-  streakText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FBBF24',
   },
 });

@@ -10,14 +10,12 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscriptionStore } from '../../store/useSubscriptionStore';
 import { useTaskStore } from '../../store/useTaskStore';
-import { useRoutineStore } from '../../store/useRoutineStore';
 import GlassCard from '../../components/GlassCard';
 
 export default function AnalyticsScreen() {
   const router = useRouter();
   const { subscriptions, getTotalMonthlySpend } = useSubscriptionStore();
   const { tasks } = useTaskStore();
-  const { habits } = useRoutineStore();
 
   const monthlySpend = getTotalMonthlySpend();
   const yearlySpend = monthlySpend * 12;
@@ -26,12 +24,6 @@ export default function AnalyticsScreen() {
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === 'completed').length;
   const taskCompletionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-
-  // Habit Stats
-  const totalHabits = habits.length;
-  const today = new Date().toISOString().split('T')[0];
-  const completedHabitsToday = habits.filter((h) => h.last_completed_date === today).length;
-  const habitCompletionRate = totalHabits > 0 ? (completedHabitsToday / totalHabits) * 100 : 0;
 
   // Category breakdown
   const categoryMap: { [key: string]: number } = {};
@@ -51,7 +43,7 @@ export default function AnalyticsScreen() {
       </TouchableOpacity>
 
       <Text style={styles.pageTitle}>Analytics & Reports</Text>
-      <Text style={styles.pageSubtitle}>Insights across your subscriptions, tasks, and habit streaks</Text>
+      <Text style={styles.pageSubtitle}>Insights across your recurring subscriptions and tasks</Text>
 
       {/* Spending Overview */}
       <Text style={styles.sectionTitle}>Financial Summary</Text>
@@ -93,21 +85,21 @@ export default function AnalyticsScreen() {
         )}
       </GlassCard>
 
-      {/* Completion Performance Stats */}
-      <Text style={styles.sectionTitle}>Performance Metrics</Text>
+      {/* Task Performance Stats */}
+      <Text style={styles.sectionTitle}>Task Performance Metrics</Text>
       <View style={styles.spendingRow}>
         <GlassCard style={styles.statBox}>
           <Ionicons name="checkbox" size={24} color="#60A5FA" />
           <Text style={styles.statAmount}>{taskCompletionRate.toFixed(0)}%</Text>
           <Text style={styles.statLabel}>Task Completion Rate</Text>
-          <Text style={styles.statSubText}>{completedTasks} of {totalTasks} completed</Text>
+          <Text style={styles.statSubText}>{completedTasks} of {totalTasks} tasks completed</Text>
         </GlassCard>
 
         <GlassCard style={styles.statBox}>
-          <Ionicons name="flame" size={24} color="#FBBF24" />
-          <Text style={styles.statAmount}>{habitCompletionRate.toFixed(0)}%</Text>
-          <Text style={styles.statLabel}>Habits Done Today</Text>
-          <Text style={styles.statSubText}>{completedHabitsToday} of {totalHabits} habits</Text>
+          <Ionicons name="card" size={24} color="#A78BFA" />
+          <Text style={styles.statAmount}>{subscriptions.length}</Text>
+          <Text style={styles.statLabel}>Active Subscriptions</Text>
+          <Text style={styles.statSubText}>Tracked & scheduled</Text>
         </GlassCard>
       </View>
     </ScrollView>
