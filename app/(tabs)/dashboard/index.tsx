@@ -5,229 +5,242 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  useColorScheme,
   RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, ProgressBar, Checkbox } from 'react-native-paper';
 import { useAuthStore } from '../../../store/useAuthStore';
 import { useSubscriptionStore } from '../../../store/useSubscriptionStore';
-import { useTaskStore } from '../../../store/useTaskStore';
-import { useRoutineStore } from '../../../store/useRoutineStore';
+import { useTaskStore, isTaskOverdue } from '../../../store/useTaskStore';
 import { useNotificationStore } from '../../../store/useNotificationStore';
-import { DarkTheme, LightTheme } from '../../../theme/colors';
 import RemindlyLogo from '../../../components/RemindlyLogo';
+import GlassCard from '../../../components/GlassCard';
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
-
   const [refreshing, setRefreshing] = useState(false);
 
   const user = useAuthStore((state) => state.user);
   const { subscriptions, getTotalMonthlySpend, getUpcomingRenewals, fetchSubscriptions } = useSubscriptionStore();
-  const { tasks, toggleTaskStatus, fetchTasks } = useTaskStore();
-  const { routines, habits, toggleRoutineCompleted, toggleHabitCompletion, fetchRoutines } = useRoutineStore();
+  const { tasks, toggleTaskStatus, getOverdueTasksCount, fetchTasks } = useTaskStore();
   const unreadNotifs = useNotificationStore((state) => state.unreadCount);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchSubscriptions(), fetchTasks(), fetchRoutines()]);
+    await Promise.all([fetchSubscriptions(), fetchTasks()]);
     setRefreshing(false);
   };
 
   const monthlyTotal = getTotalMonthlySpend();
+  const annualTotal = monthlyTotal * 12;
   const upcomingRenewals = getUpcomingRenewals(14);
-  const todayTasks = tasks.filter((t) => t.status !== 'completed').slice(0, 3);
-  const todayRoutines = routines.slice(0, 3);
+  const oneWeekRenewals = getUpcomingRenewals(7);
+  const overdueCount = getOverdueTasksCount();
+  const pendingTasks = tasks.filter((t) => t.status !== 'completed');
 
   return (
     <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A78BFA" />}
     >
-      {/* Welcome Widget */}
-      <View style={[styles.welcomeCard, { backgroundColor: theme.colors.primary }]}>
-        <View style={{ marginRight: 12 }}>
-          <RemindlyLogo size={52} showBackground={false} />
+      {/* Welcome Header Glass Card */}
+      <GlassCard glow style={styles.welcomeCard}>
+        <View style={styles.welcomeRow}>
+          <View style={styles.logoMargin}>
+            <RemindlyLogo size={54} showBackground={true} />
+          </View>
+          <View style={styles.welcomeTextGroup}>
+            <Text style={styles.greetingText}>Welcome, {user?.name || 'User'} 👋</Text>
+            <Text style={styles.welcomeSubtext}>
+              {user?.emailVerified ? 'Verified Account' : 'Free Plan'} • Smart Reminders
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.notifBadgeBtn}
+            onPress={() => router.push('/(tabs)/notifications')}
+          >
+            <Ionicons name="notifications" size={24} color="#A78BFA" />
+            {unreadNotifs > 0 && (
+              <View style={styles.badgeDot}>
+                <Text style={styles.badgeText}>{unreadNotifs}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
-        <View style={styles.welcomeTextGroup}>
-          <Text style={styles.greetingText}>Hello, {user?.name || 'Friend'} 👋</Text>
-          <Text style={styles.welcomeSubtext}>Remindly • Subscriptions & Tasks</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.notifBadgeBtn}
-          onPress={() => router.push('/(tabs)/notifications')}
-        >
-          <Ionicons name="notifications" size={24} color="#FFF" />
-          {unreadNotifs > 0 && <View style={styles.badgeDot} />}
-        </TouchableOpacity>
-      </View>
+      </GlassCard>
 
-      {/* Monthly Spending & Analytics Overview */}
+      {/* 1-Week Renewal Warning Banner */}
+      {oneWeekRenewals.length > 0 && (
+        <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/subscriptions')}>
+          <GlassCard style={styles.alertBanner} glow>
+            <View style={styles.alertBannerRow}>
+              <View style={styles.alertIconWrapper}>
+                <Ionicons name="alert-circle" size={22} color="#FBBF24" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.alertBannerTitle}>📅 1 Week Advance Renewal Alert!</Text>
+                <Text style={styles.alertBannerText}>
+                  {oneWeekRenewals[0].name} (${oneWeekRenewals[0].amount.toFixed(2)}) is renewing on {oneWeekRenewals[0].renewal_date}.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </View>
+          </GlassCard>
+        </TouchableOpacity>
+      )}
+
+      {/* Overdue Tasks Banner */}
+      {overdueCount > 0 && (
+        <TouchableOpacity activeOpacity={0.85} onPress={() => router.push('/(tabs)/tasks')}>
+          <GlassCard style={styles.overdueBanner} glow>
+            <View style={styles.alertBannerRow}>
+              <View style={styles.overdueIconWrapper}>
+                <Ionicons name="warning" size={22} color="#F87171" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.overdueBannerTitle}>⚠️ {overdueCount} Task(s) Overdue</Text>
+                <Text style={styles.overdueBannerText}>
+                  Tap to view and complete or reschedule.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </View>
+          </GlassCard>
+        </TouchableOpacity>
+      )}
+
+      {/* Key Financial & Task Metrics Grid */}
       <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
-          <View style={[styles.statIconBg, { backgroundColor: '#EEF2FF' }]}>
-            <Ionicons name="wallet-outline" size={22} color={theme.colors.primary} />
+        <GlassCard style={styles.statCard}>
+          <View style={[styles.statIconBg, { backgroundColor: 'rgba(99, 102, 241, 0.25)' }]}>
+            <Ionicons name="wallet" size={20} color="#818CF8" />
           </View>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>
-            ${monthlyTotal.toFixed(2)}
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Monthly Subscriptions</Text>
-        </View>
+          <Text style={styles.statValue}>${monthlyTotal.toFixed(2)}</Text>
+          <Text style={styles.statLabel}>Monthly Cost</Text>
+          <Text style={styles.statSublabel}>${annualTotal.toFixed(0)}/yr est.</Text>
+        </GlassCard>
 
-        <View style={[styles.statCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
-          <View style={[styles.statIconBg, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="time-outline" size={22} color="#D97706" />
+        <GlassCard style={styles.statCard}>
+          <View style={[styles.statIconBg, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
+            <Ionicons name="time" size={20} color="#FBBF24" />
           </View>
-          <Text style={[styles.statValue, { color: theme.colors.text }]}>
-            {upcomingRenewals.length} Due
-          </Text>
-          <Text style={[styles.statLabel, { color: theme.colors.textSecondary }]}>Renewals Next 14 Days</Text>
-        </View>
+          <Text style={styles.statValue}>{upcomingRenewals.length}</Text>
+          <Text style={styles.statLabel}>14-Day Renewals</Text>
+          <Text style={styles.statSublabel}>{subscriptions.length} active subs</Text>
+        </GlassCard>
+
+        <GlassCard style={styles.statCard}>
+          <View style={[styles.statIconBg, { backgroundColor: 'rgba(52, 211, 153, 0.25)' }]}>
+            <Ionicons name="checkbox" size={20} color="#34D399" />
+          </View>
+          <Text style={styles.statValue}>{pendingTasks.length}</Text>
+          <Text style={styles.statLabel}>Pending Tasks</Text>
+          <Text style={styles.statSublabel}>{overdueCount} overdue</Text>
+        </GlassCard>
       </View>
 
-      {/* Quick Actions Widget */}
-      <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Quick Actions</Text>
-      <View style={styles.quickActionsRow}>
-        <TouchableOpacity
-          style={[styles.quickBtn, { backgroundColor: theme.colors.surface }]}
-          onPress={() => router.push('/subscription/create')}
-        >
-          <Ionicons name="add-circle" size={24} color={theme.colors.primary} />
-          <Text style={[styles.quickBtnText, { color: theme.colors.text }]}>+ Sub</Text>
+      {/* Quick Action Navigation */}
+      <Text style={styles.sectionTitle}>Quick Actions</Text>
+      <View style={styles.quickActionsGrid}>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/subscription/create')}>
+          <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(99, 102, 241, 0.25)' }]}>
+            <Ionicons name="card-outline" size={22} color="#818CF8" />
+          </View>
+          <Text style={styles.quickActionLabel}>+ Subscription</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.quickBtn, { backgroundColor: theme.colors.surface }]}
-          onPress={() => router.push('/task/create')}
-        >
-          <Ionicons name="checkbox" size={24} color="#10B981" />
-          <Text style={[styles.quickBtnText, { color: theme.colors.text }]}>+ Task</Text>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/task/create')}>
+          <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(52, 211, 153, 0.25)' }]}>
+            <Ionicons name="add-circle-outline" size={22} color="#34D399" />
+          </View>
+          <Text style={styles.quickActionLabel}>+ Task</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.quickBtn, { backgroundColor: theme.colors.surface }]}
-          onPress={() => router.push('/habit/create')}
-        >
-          <Ionicons name="flame" size={24} color="#F59E0B" />
-          <Text style={[styles.quickBtnText, { color: theme.colors.text }]}>+ Habit</Text>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/analytics' as any)}>
+          <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(167, 139, 250, 0.25)' }]}>
+            <Ionicons name="bar-chart-outline" size={22} color="#A78BFA" />
+          </View>
+          <Text style={styles.quickActionLabel}>Reports</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.quickBtn, { backgroundColor: theme.colors.surface }]}
-          onPress={() => router.push('/analytics')}
-        >
-          <Ionicons name="stats-chart" size={24} color="#8B5CF6" />
-          <Text style={[styles.quickBtnText, { color: theme.colors.text }]}>Reports</Text>
+        <TouchableOpacity style={styles.quickActionBtn} onPress={() => router.push('/(tabs)/notifications')}>
+          <View style={[styles.quickActionIcon, { backgroundColor: 'rgba(245, 158, 11, 0.25)' }]}>
+            <Ionicons name="notifications-outline" size={22} color="#FBBF24" />
+          </View>
+          <Text style={styles.quickActionLabel}>Alerts</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Upcoming Subscription Renewals Widget */}
+      {/* Section: Upcoming Renewals */}
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Upcoming Renewals</Text>
+        <Text style={styles.sectionTitle}>Upcoming Renewals</Text>
         <TouchableOpacity onPress={() => router.push('/(tabs)/subscriptions')}>
-          <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>View All</Text>
+          <Text style={styles.seeAllText}>Manage All ({subscriptions.length})</Text>
         </TouchableOpacity>
       </View>
       {upcomingRenewals.length === 0 ? (
-        <Card style={[styles.emptyCard, { backgroundColor: theme.colors.card }]}>
-          <Text style={{ color: theme.colors.textSecondary }}>No renewals due in the next 14 days 🎉</Text>
-        </Card>
+        <GlassCard style={styles.emptyCard}>
+          <Text style={styles.emptyText}>No renewals coming up in the next 14 days 🎉</Text>
+        </GlassCard>
       ) : (
-        upcomingRenewals.map((sub) => (
-          <TouchableOpacity
-            key={sub.id}
-            onPress={() => router.push(`/subscription/${sub.id}`)}
-          >
-            <Card style={[styles.itemCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
-              <Card.Content style={styles.cardContentRow}>
-                <View style={[styles.itemIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                  <Ionicons name="card" size={22} color={theme.colors.primary} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={[styles.itemName, { color: theme.colors.text }]}>{sub.name}</Text>
-                  <Text style={[styles.itemMeta, { color: theme.colors.textSecondary }]}>
-                    Renews: {sub.renewal_date} • {sub.payment_method}
+        upcomingRenewals.slice(0, 3).map((sub) => (
+          <GlassCard key={sub.id} style={styles.itemCard} onPress={() => router.push('/(tabs)/subscriptions')}>
+            <View style={styles.itemRow}>
+              <View style={styles.subIconBg}>
+                <Ionicons name="card" size={22} color="#818CF8" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.itemName}>{sub.name}</Text>
+                <Text style={styles.itemMeta}>
+                  Renews {sub.renewal_date} • {sub.billing_cycle.toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.itemPrice}>
+                {sub.currency}{sub.amount.toFixed(2)}
+              </Text>
+            </View>
+          </GlassCard>
+        ))
+      )}
+
+      {/* Section: Priority Tasks */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Priority Tasks</Text>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/tasks')}>
+          <Text style={styles.seeAllText}>View All ({tasks.length})</Text>
+        </TouchableOpacity>
+      </View>
+      {pendingTasks.length === 0 ? (
+        <GlassCard style={styles.emptyCard}>
+          <Text style={styles.emptyText}>All tasks completed for today! ✨</Text>
+        </GlassCard>
+      ) : (
+        pendingTasks.slice(0, 4).map((t) => {
+          const overdue = isTaskOverdue(t);
+          return (
+            <GlassCard key={t.id} style={styles.itemCard}>
+              <View style={styles.itemRow}>
+                <TouchableOpacity onPress={() => toggleTaskStatus(t.id)} style={styles.checkboxBtn}>
+                  <Ionicons
+                    name={t.status === 'completed' ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={24}
+                    color={t.status === 'completed' ? '#34D399' : '#94A3B8'}
+                  />
+                </TouchableOpacity>
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={[styles.itemName, t.status === 'completed' && styles.completedText]}>
+                    {t.title}
+                  </Text>
+                  <Text style={[styles.itemMeta, overdue && { color: '#F87171', fontWeight: '700' }]}>
+                    {overdue ? '⚠️ OVERDUE • ' : ''}Due: {t.due_date} • Priority: {t.priority.toUpperCase()}
                   </Text>
                 </View>
-                <Text style={[styles.itemPrice, { color: theme.colors.text }]}>
-                  {sub.currency}{sub.amount.toFixed(2)}
-                </Text>
-              </Card.Content>
-            </Card>
-          </TouchableOpacity>
-        ))
+              </View>
+            </GlassCard>
+          );
+        })
       )}
-
-      {/* Today's Tasks Widget */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Today's Priority Tasks</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/tasks')}>
-          <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>View All</Text>
-        </TouchableOpacity>
-      </View>
-      {todayTasks.length === 0 ? (
-        <Card style={[styles.emptyCard, { backgroundColor: theme.colors.card }]}>
-          <Text style={{ color: theme.colors.textSecondary }}>All tasks completed for today! ✨</Text>
-        </Card>
-      ) : (
-        todayTasks.map((t) => (
-          <Card key={t.id} style={[styles.itemCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
-            <Card.Content style={styles.cardContentRow}>
-              <Checkbox
-                status={t.status === 'completed' ? 'checked' : 'unchecked'}
-                onPress={() => toggleTaskStatus(t.id)}
-                color={theme.colors.primary}
-              />
-              <View style={{ flex: 1, marginLeft: 8 }}>
-                <Text style={[styles.itemName, { color: theme.colors.text }]}>{t.title}</Text>
-                <Text style={[styles.itemMeta, { color: theme.colors.textSecondary }]}>
-                  Priority: {t.priority.toUpperCase()} • Due: {t.due_date}
-                </Text>
-              </View>
-            </Card.Content>
-          </Card>
-        ))
-      )}
-
-      {/* Today's Routine & Habit Progress Widget */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Habits & Streaks</Text>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/routines')}>
-          <Text style={[styles.seeAllText, { color: theme.colors.primary }]}>View All</Text>
-        </TouchableOpacity>
-      </View>
-      {habits.map((h) => {
-        const isDoneToday = h.last_completed_date === new Date().toISOString().split('T')[0];
-        return (
-          <Card key={h.id} style={[styles.itemCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
-            <Card.Content style={styles.cardContentRow}>
-              <TouchableOpacity onPress={() => toggleHabitCompletion(h.id)}>
-                <Ionicons
-                  name={isDoneToday ? 'checkmark-circle' : 'ellipse-outline'}
-                  size={26}
-                  color={isDoneToday ? '#10B981' : theme.colors.textMuted}
-                />
-              </TouchableOpacity>
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={[styles.itemName, { color: theme.colors.text }]}>{h.title}</Text>
-                <Text style={[styles.itemMeta, { color: theme.colors.textSecondary }]}>
-                  {h.streak_count} day streak 🔥 (Best: {h.best_streak})
-                </Text>
-              </View>
-              <View style={styles.streakBadge}>
-                <Ionicons name="flame" size={16} color="#F59E0B" />
-                <Text style={styles.streakCount}>{h.streak_count}</Text>
-              </View>
-            </Card.Content>
-          </Card>
-        );
-      })}
     </ScrollView>
   );
 }
@@ -235,159 +248,228 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#070A14',
   },
   content: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: 18,
+    paddingBottom: 40,
+    maxWidth: 800,
+    width: '100%',
+    alignSelf: 'center',
   },
   welcomeCard: {
-    borderRadius: 20,
-    padding: 20,
+    marginBottom: 16,
+  },
+  welcomeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
+  },
+  logoMargin: {
+    marginRight: 12,
   },
   welcomeTextGroup: {
     flex: 1,
   },
   greetingText: {
-    color: '#FFF',
-    fontSize: 22,
+    color: '#F8FAFC',
+    fontSize: 20,
     fontWeight: '800',
   },
   welcomeSubtext: {
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontSize: 13,
-    marginTop: 4,
+    color: '#94A3B8',
+    fontSize: 12,
+    marginTop: 2,
   },
   notifBadgeBtn: {
-    padding: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   },
   badgeDot: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#EF4444',
-    borderWidth: 1.5,
-    borderColor: '#FFF',
+    top: 4,
+    right: 4,
+    backgroundColor: '#F87171',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  alertBanner: {
+    marginBottom: 14,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+  },
+  alertBannerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  alertIconWrapper: {
+    marginRight: 12,
+  },
+  alertBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FBBF24',
+  },
+  alertBannerText: {
+    fontSize: 12,
+    color: '#CBD5E1',
+    marginTop: 2,
+  },
+  overdueBanner: {
+    marginBottom: 14,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  overdueIconWrapper: {
+    marginRight: 12,
+  },
+  overdueBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F87171',
+  },
+  overdueBannerText: {
+    fontSize: 12,
+    color: '#CBD5E1',
+    marginTop: 2,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
     marginBottom: 20,
   },
   statCard: {
     flex: 1,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
+    padding: 14,
   },
   statIconBg: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
+    color: '#F8FAFC',
   },
   statLabel: {
     fontSize: 12,
+    fontWeight: '600',
+    color: '#CBD5E1',
     marginTop: 2,
   },
-  quickActionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 24,
-    marginTop: 8,
+  statSublabel: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
   },
-  quickBtn: {
+  quickActionsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 24,
+  },
+  quickActionBtn: {
     flex: 1,
+    backgroundColor: 'rgba(18, 25, 42, 0.75)',
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.25)',
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
   },
-  quickBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginTop: 4,
+  quickActionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  quickActionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#CBD5E1',
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 12,
+    marginBottom: 12,
+    marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
+    color: '#F8FAFC',
+    marginBottom: 12,
   },
   seeAllText: {
     fontSize: 13,
+    color: '#818CF8',
     fontWeight: '600',
   },
   emptyCard: {
     padding: 16,
-    borderRadius: 14,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 14,
+  },
+  emptyText: {
+    color: '#94A3B8',
+    fontSize: 13,
   },
   itemCard: {
-    borderRadius: 14,
-    borderWidth: 1,
     marginBottom: 10,
+    padding: 14,
   },
-  cardContentRow: {
+  itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
   },
-  itemIcon: {
-    width: 40,
-    height: 40,
+  subIconBg: {
+    width: 38,
+    height: 38,
     borderRadius: 12,
+    backgroundColor: 'rgba(99, 102, 241, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   itemName: {
     fontSize: 15,
     fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  completedText: {
+    textDecorationLine: 'line-through',
+    color: '#64748B',
   },
   itemMeta: {
     fontSize: 12,
+    color: '#94A3B8',
     marginTop: 2,
   },
   itemPrice: {
     fontSize: 16,
     fontWeight: '800',
+    color: '#818CF8',
   },
-  streakBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    gap: 4,
-  },
-  streakCount: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#D97706',
+  checkboxBtn: {
+    padding: 2,
   },
 });

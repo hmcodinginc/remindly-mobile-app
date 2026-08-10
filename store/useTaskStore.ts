@@ -21,10 +21,10 @@ const INITIAL_MOCK_TASKS: Task[] = [
   {
     id: 'task-2',
     user: 'user-1',
-    title: 'Sync PocketBase Mobile Database Schema',
-    description: 'Verify collection permissions and indexing rules',
+    title: 'Sync Mobile App Database Schema',
+    description: 'Verify collection permissions and index rules for glass UI',
     priority: 'urgent',
-    due_date: new Date().toISOString().split('T')[0],
+    due_date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Overdue task sample!
     status: 'todo',
     labels: ['Development', 'Backend'],
     reminder: true,
@@ -34,8 +34,8 @@ const INITIAL_MOCK_TASKS: Task[] = [
   {
     id: 'task-3',
     user: 'user-1',
-    title: 'Complete Weekly Workout Log',
-    description: 'Log cardio and strength training progress',
+    title: 'Complete Weekly Workout & Cardio Log',
+    description: 'Log strength training progress and set goals',
     priority: 'medium',
     due_date: new Date(Date.now() + 172800000).toISOString().split('T')[0],
     status: 'todo',
@@ -46,12 +46,19 @@ const INITIAL_MOCK_TASKS: Task[] = [
   },
 ];
 
+export const isTaskOverdue = (task: Task): boolean => {
+  if (task.status === 'completed' || task.status === 'archived') return false;
+  if (!task.due_date) return false;
+  const today = new Date().toISOString().split('T')[0];
+  return task.due_date < today;
+};
+
 interface TaskState {
   tasks: Task[];
   isLoading: boolean;
   searchQuery: string;
   selectedPriority: TaskPriority | 'all';
-  selectedStatus: TaskStatus | 'all';
+  selectedStatus: TaskStatus | 'all' | 'overdue' | 'pending';
 
   // Actions
   fetchTasks: () => Promise<void>;
@@ -61,7 +68,10 @@ interface TaskState {
   deleteTask: (id: string) => Promise<boolean>;
   setSearchQuery: (query: string) => void;
   setSelectedPriority: (priority: TaskPriority | 'all') => void;
-  setSelectedStatus: (status: TaskStatus | 'all') => void;
+  setSelectedStatus: (status: TaskStatus | 'all' | 'overdue' | 'pending') => void;
+
+  // Helpers
+  getOverdueTasksCount: () => number;
 }
 
 export const useTaskStore = create<TaskState>()(
@@ -155,6 +165,10 @@ export const useTaskStore = create<TaskState>()(
       setSearchQuery: (query) => set({ searchQuery: query }),
       setSelectedPriority: (priority) => set({ selectedPriority: priority }),
       setSelectedStatus: (status) => set({ selectedStatus: status }),
+
+      getOverdueTasksCount: () => {
+        return get().tasks.filter((t) => isTaskOverdue(t)).length;
+      },
     }),
     {
       name: 'remindly-tasks-storage',

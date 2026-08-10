@@ -1,22 +1,16 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
   StyleSheet,
   ScrollView,
-  useColorScheme,
 } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useRoutineStore } from '../../store/useRoutineStore';
-import { DarkTheme, LightTheme } from '../../theme/colors';
+import GlassCard from '../../components/GlassCard';
+import GlassInput from '../../components/GlassInput';
+import GlassButton from '../../components/GlassButton';
 
 export default function CreateHabitScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
-
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Health');
@@ -35,47 +29,43 @@ export default function CreateHabitScreen() {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-    >
-      <TextInput
-        label="Habit Title *"
-        value={title}
-        onChangeText={setTitle}
-        mode="outlined"
-        placeholder="e.g. Read 20 pages, Drink 2L water"
-        style={styles.input}
-      />
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <GlassCard glow style={styles.card}>
+        <GlassInput
+          label="Habit Title *"
+          placeholder="e.g. Read 20 pages, Drink 2L water"
+          value={title}
+          onChangeText={setTitle}
+          iconName="flame-outline"
+        />
 
-      <TextInput
-        label="Description"
-        value={description}
-        onChangeText={setDescription}
-        mode="outlined"
-        multiline
-        numberOfLines={3}
-        style={styles.input}
-      />
+        <GlassInput
+          label="Description"
+          placeholder="Goal details..."
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={3}
+          style={{ height: 80 }}
+          iconName="document-text-outline"
+        />
 
-      <TextInput
-        label="Category"
-        value={category}
-        onChangeText={setCategory}
-        mode="outlined"
-        placeholder="Fitness, Learning, Health"
-        style={styles.input}
-      />
+        <GlassInput
+          label="Category"
+          placeholder="Fitness, Learning, Health..."
+          value={category}
+          onChangeText={setCategory}
+          iconName="folder-outline"
+        />
 
-      <Button
-        mode="contained"
-        onPress={handleSave}
-        disabled={!title}
-        style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]}
-        contentStyle={{ paddingVertical: 6 }}
-      >
-        Create Habit
-      </Button>
+        <GlassButton
+          title="Create Habit & Track Streak"
+          onPress={handleSave}
+          disabled={!title}
+          variant="primary"
+          style={{ marginTop: 12 }}
+        />
+      </GlassCard>
     </ScrollView>
   );
 }
@@ -83,15 +73,16 @@ export default function CreateHabitScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#070A14',
   },
   content: {
     padding: 16,
+    paddingBottom: 40,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
-  input: {
-    marginBottom: 14,
-  },
-  saveBtn: {
-    borderRadius: 14,
-    marginTop: 16,
+  card: {
+    marginBottom: 20,
   },
 });

@@ -1,36 +1,55 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DarkTheme, LightTheme } from '../../theme/colors';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import RemindlyLogo from '../../components/RemindlyLogo';
+import { setupNotificationResponseListener } from '../../services/notifications';
 
 export default function TabsLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
   const unreadCount = useNotificationStore((state) => state.unreadCount);
+
+  useEffect(() => {
+    const cleanup = setupNotificationResponseListener();
+    return cleanup;
+  }, []);
 
   return (
     <Tabs
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: '#070A14',
+          borderBottomWidth: 1,
+          borderBottomColor: 'rgba(99, 102, 241, 0.2)',
+          elevation: 0,
+          shadowOpacity: 0,
         },
         headerTitleStyle: {
           fontWeight: '700',
-          color: theme.colors.text,
+          fontSize: 18,
+          color: '#F8FAFC',
         },
+        headerRight: () => (
+          <View style={{ marginRight: 16 }}>
+            <RemindlyLogo size={36} showBackground={false} />
+          </View>
+        ),
         tabBarStyle: {
-          backgroundColor: theme.colors.tabBar,
-          borderTopColor: theme.colors.border,
-          height: 60,
+          backgroundColor: 'rgba(7, 10, 20, 0.95)',
+          borderTopColor: 'rgba(99, 102, 241, 0.25)',
+          borderTopWidth: 1,
+          height: 64,
           paddingBottom: 8,
           paddingTop: 8,
+          elevation: 10,
         },
-        tabBarActiveTintColor: theme.colors.activeTab,
-        tabBarInactiveTintColor: theme.colors.tabBarInactive,
+        tabBarActiveTintColor: '#A78BFA',
+        tabBarInactiveTintColor: '#64748B',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
       }}
     >
       <Tabs.Screen
@@ -45,7 +64,11 @@ export default function TabsLayout() {
         options={{
           title: 'Dashboard',
           headerTitle: 'Remindly Overview',
-          tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? styles.activeIconGlow : null}>
+              <Ionicons name={focused ? "grid" : "grid-outline"} size={size} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
@@ -53,7 +76,11 @@ export default function TabsLayout() {
         options={{
           title: 'Subscriptions',
           headerTitle: 'Subscription Manager',
-          tabBarIcon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? styles.activeIconGlow : null}>
+              <Ionicons name={focused ? "card" : "card-outline"} size={size} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
@@ -61,34 +88,60 @@ export default function TabsLayout() {
         options={{
           title: 'Tasks',
           headerTitle: 'Task Manager',
-          tabBarIcon: ({ color, size }) => <Ionicons name="checkbox-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? styles.activeIconGlow : null}>
+              <Ionicons name={focused ? "checkbox" : "checkbox-outline"} size={size} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="routines/index"
         options={{
-          title: 'Habits',
-          headerTitle: 'Habit & Routines',
-          tabBarIcon: ({ color, size }) => <Ionicons name="flame-outline" size={size} color={color} />,
+          href: null,
+          headerShown: false,
         }}
       />
       <Tabs.Screen
         name="notifications/index"
         options={{
           title: 'Alerts',
-          headerTitle: 'Notifications',
+          headerTitle: 'Notifications Center',
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-          tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" size={size} color={color} />,
+          tabBarBadgeStyle: {
+            backgroundColor: '#F87171',
+            color: '#FFFFFF',
+            fontSize: 10,
+            fontWeight: '700',
+          },
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? styles.activeIconGlow : null}>
+              <Ionicons name={focused ? "notifications" : "notifications-outline"} size={size} color={color} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="profile/index"
         options={{
           title: 'Profile',
-          headerTitle: 'User Profile & Settings',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
+          headerTitle: 'Profile & Settings',
+          tabBarIcon: ({ color, size, focused }) => (
+            <View style={focused ? styles.activeIconGlow : null}>
+              <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
+            </View>
+          ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  activeIconGlow: {
+    shadowColor: '#A78BFA',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 8,
+  },
+});

@@ -7,20 +7,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  useColorScheme,
 } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/useAuthStore';
-import { DarkTheme, LightTheme } from '../../theme/colors';
+import RemindlyLogo from '../../components/RemindlyLogo';
+import GlassCard from '../../components/GlassCard';
+import GlassInput from '../../components/GlassInput';
+import GlassButton from '../../components/GlassButton';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
-
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,104 +55,94 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          <Ionicons name="arrow-back" size={24} color="#F8FAFC" />
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Create Account</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-            Join Remindly to manage subscriptions & habits
+          <View style={styles.logoWrapper}>
+            <RemindlyLogo size={70} />
+          </View>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>
+            Join Remindly to manage subscriptions & track daily habits
           </Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
+        <GlassCard glow style={styles.card}>
           {displayError && (
-            <View style={[styles.errorBox, { backgroundColor: '#FEE2E2' }]}>
-              <Ionicons name="alert-circle" size={20} color="#DC2626" />
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle" size={18} color="#F87171" />
               <Text style={styles.errorText}>{displayError}</Text>
             </View>
           )}
 
-          <TextInput
-            label="Full Name (Optional)"
+          <GlassInput
+            label="Full Name"
+            placeholder="Alex Johnson"
             value={name}
             onChangeText={setName}
-            mode="outlined"
-            left={<TextInput.Icon icon="account-outline" />}
-            style={styles.input}
+            iconName="person-outline"
           />
 
-          <TextInput
+          <GlassInput
             label="Email Address"
+            placeholder="name@example.com"
             value={email}
             onChangeText={(t) => {
               setLocalError(null);
               clearError();
               setEmail(t);
             }}
-            mode="outlined"
             keyboardType="email-address"
             autoCapitalize="none"
-            left={<TextInput.Icon icon="email-outline" />}
-            style={styles.input}
+            iconName="mail-outline"
           />
 
-          <TextInput
+          <GlassInput
             label="Password (min 8 chars)"
+            placeholder="••••••••"
             value={password}
             onChangeText={(t) => {
               setLocalError(null);
               clearError();
               setPassword(t);
             }}
-            mode="outlined"
             secureTextEntry={secureText}
-            left={<TextInput.Icon icon="lock-outline" />}
-            right={
-              <TextInput.Icon
-                icon={secureText ? 'eye-outline' : 'eye-off-outline'}
-                onPress={() => setSecureText(!secureText)}
-              />
-            }
-            style={styles.input}
+            iconName="lock-closed-outline"
+            rightIcon={secureText ? 'eye-outline' : 'eye-off-outline'}
+            onRightIconPress={() => setSecureText(!secureText)}
           />
 
-          <TextInput
+          <GlassInput
             label="Confirm Password"
+            placeholder="••••••••"
             value={confirmPassword}
             onChangeText={(t) => {
               setLocalError(null);
               clearError();
               setConfirmPassword(t);
             }}
-            mode="outlined"
             secureTextEntry={secureText}
-            left={<TextInput.Icon icon="lock-check-outline" />}
-            style={styles.input}
+            iconName="shield-checkmark-outline"
           />
 
-          <Button
-            mode="contained"
+          <GlassButton
+            title="Create Account"
             onPress={handleRegister}
             loading={isLoading}
-            disabled={isLoading}
-            style={[styles.registerBtn, { backgroundColor: theme.colors.primary }]}
-            contentStyle={{ paddingVertical: 6 }}
-          >
-            Create Account
-          </Button>
-        </View>
+            variant="primary"
+            style={styles.registerBtn}
+          />
+        </GlassCard>
 
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.colors.textSecondary }]}>
-            Already have an account?{' '}
-          </Text>
+          <Text style={styles.footerText}>Already have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-            <Text style={[styles.signInText, { color: theme.colors.primary }]}>Sign In</Text>
+            <Text style={styles.signInText}>Sign In</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -166,66 +153,78 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#070A14',
   },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
     justifyContent: 'center',
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
   backBtn: {
-    marginBottom: 20,
+    marginBottom: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
+    alignItems: 'center',
     marginBottom: 24,
+  },
+  logoWrapper: {
+    marginBottom: 12,
   },
   title: {
     fontSize: 28,
     fontWeight: '800',
+    color: '#F8FAFC',
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
+    color: '#94A3B8',
     marginTop: 4,
+    textAlign: 'center',
   },
   card: {
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    marginBottom: 20,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
     gap: 8,
   },
   errorText: {
-    color: '#DC2626',
+    color: '#F87171',
     fontSize: 13,
     flex: 1,
   },
-  input: {
-    marginBottom: 14,
-  },
   registerBtn: {
-    borderRadius: 14,
     marginTop: 8,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 12,
   },
   footerText: {
     fontSize: 14,
+    color: '#94A3B8',
   },
   signInText: {
     fontSize: 14,
+    color: '#818CF8',
     fontWeight: '700',
   },
 });

@@ -1,113 +1,285 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  useColorScheme,
+  Switch,
+  Alert,
 } from 'react-native';
-import { Avatar, Button, Card, Switch, Divider } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../store/useAuthStore';
-import { DarkTheme, LightTheme } from '../../../theme/colors';
+import GlassCard from '../../../components/GlassCard';
+import GlassModal from '../../../components/GlassModal';
+import GlassInput from '../../../components/GlassInput';
+import GlassButton from '../../../components/GlassButton';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
+  const {
+    user,
+    settings,
+    logout,
+    sendEmailVerification,
+    changePassword,
+    updateNotificationPreferences,
+    message,
+    error,
+    clearMessage,
+    clearError,
+  } = useAuthStore();
 
-  const { user, logout } = useAuthStore();
+  // Change Password Modal state
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/(auth)/login');
+  const prefs = settings.notification_preferences;
+
+  const handleVerifyEmail = async () => {
+    await sendEmailVerification();
   };
 
+  const handleChangePasswordSubmit = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all password fields.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'New passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      Alert.alert('Error', 'New password must be at least 8 characters.');
+      return;
+    }
+    await changePassword(oldPassword, newPassword);
+    setPasswordModalVisible(false);
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleLogout = async () => {
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+          router.replace('/(auth)/login');
+        },
+      },
+    ]);
+  };
+
+  const userInitials = user?.name
+    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase()
+    : 'RM';
+
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-    >
-      {/* Profile Card */}
-      <Card style={[styles.profileCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
-        <Card.Content style={styles.profileHeader}>
-          <Avatar.Text
-            size={72}
-            label={user?.name ? user.name.substring(0, 2).toUpperCase() : 'RM'}
-            style={{ backgroundColor: theme.colors.primary }}
-            color="#FFF"
-          />
-          <View style={styles.profileDetails}>
-            <Text style={[styles.userName, { color: theme.colors.text }]}>{user?.name || 'Remindly User'}</Text>
-            <Text style={[styles.userEmail, { color: theme.colors.textSecondary }]}>
-              {user?.email || 'user@example.com'}
-            </Text>
-            <View style={[styles.statusBadge, { backgroundColor: '#D1FAE5' }]}>
-              <Text style={{ color: '#059669', fontSize: 11, fontWeight: '700' }}>PocketBase Synced</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Messages */}
+      {message && (
+        <GlassCard style={styles.messageCard}>
+          <View style={styles.messageRow}>
+            <Ionicons name="checkmark-circle" size={20} color="#34D399" />
+            <Text style={styles.messageText}>{message}</Text>
+            <TouchableOpacity onPress={clearMessage}>
+              <Ionicons name="close" size={18} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
+        </GlassCard>
+      )}
+
+      {/* User Profile Glass Card */}
+      <GlassCard glow style={styles.profileCard}>
+        <View style={styles.profileRow}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>{userInitials}</Text>
+          </View>
+
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <Text style={styles.userName}>{user?.name || 'User'}</Text>
+            <Text style={styles.userEmail}>{user?.email || 'user@remindly.app'}</Text>
+
+            <View style={styles.badgeRow}>
+              <View
+                style={[
+                  styles.verifiedBadge,
+                  user?.emailVerified ? styles.badgeGreen : styles.badgeAmber,
+                ]}
+              >
+                <Ionicons
+                  name={user?.emailVerified ? 'checkmark-circle' : 'alert-circle'}
+                  size={12}
+                  color={user?.emailVerified ? '#34D399' : '#FBBF24'}
+                />
+                <Text
+                  style={[
+                    styles.badgeText,
+                    user?.emailVerified ? { color: '#34D399' } : { color: '#FBBF24' },
+                  ]}
+                >
+                  {user?.emailVerified ? 'Verified Email' : 'Unverified Email'}
+                </Text>
+              </View>
             </View>
           </View>
-        </Card.Content>
-      </Card>
+        </View>
 
-      {/* Settings Navigation Menu */}
-      <Text style={[styles.menuTitle, { color: theme.colors.text }]}>Account & Settings</Text>
+        {!user?.emailVerified && (
+          <GlassButton
+            title="Send Email Verification Link"
+            onPress={handleVerifyEmail}
+            variant="secondary"
+            icon="mail-outline"
+            style={{ marginTop: 16 }}
+          />
+        )}
+      </GlassCard>
 
-      <Card style={[styles.menuCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/settings')}
-        >
-          <View style={[styles.menuIconBg, { backgroundColor: '#EEF2FF' }]}>
-            <Ionicons name="settings-outline" size={20} color={theme.colors.primary} />
+      {/* Notification Preferences Section */}
+      <Text style={styles.sectionHeaderTitle}>Notification Preferences</Text>
+      <GlassCard style={styles.menuCard}>
+        <View style={styles.toggleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toggleTitle}>Push & Local Notifications</Text>
+            <Text style={styles.toggleSubtext}>Enable mobile & web push alerts</Text>
           </View>
-          <Text style={[styles.menuText, { color: theme.colors.text }]}>App Settings</Text>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
+          <Switch
+            value={prefs.push_enabled}
+            onValueChange={(val) => updateNotificationPreferences({ push_enabled: val })}
+            trackColor={{ false: '#334155', true: '#6366F1' }}
+            thumbColor={prefs.push_enabled ? '#A78BFA' : '#94A3B8'}
+          />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.toggleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toggleTitle}>📅 1-Week Advance Renewal Alerts</Text>
+            <Text style={styles.toggleSubtext}>Get notified 7 days prior to subscription renew</Text>
+          </View>
+          <Switch
+            value={prefs.one_week_renewal_alerts}
+            onValueChange={(val) => updateNotificationPreferences({ one_week_renewal_alerts: val })}
+            trackColor={{ false: '#334155', true: '#6366F1' }}
+            thumbColor={prefs.one_week_renewal_alerts ? '#A78BFA' : '#94A3B8'}
+          />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.toggleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toggleTitle}>⚠️ Overdue Task Warnings</Text>
+            <Text style={styles.toggleSubtext}>Receive alerts for past due tasks</Text>
+          </View>
+          <Switch
+            value={prefs.overdue_alerts}
+            onValueChange={(val) => updateNotificationPreferences({ overdue_alerts: val })}
+            trackColor={{ false: '#334155', true: '#6366F1' }}
+            thumbColor={prefs.overdue_alerts ? '#A78BFA' : '#94A3B8'}
+          />
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.toggleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toggleTitle}>🔥 Daily Habit Streak Reminders</Text>
+            <Text style={styles.toggleSubtext}>Keep your active streak count unbroken</Text>
+          </View>
+          <Switch
+            value={prefs.habit_reminders}
+            onValueChange={(val) => updateNotificationPreferences({ habit_reminders: val })}
+            trackColor={{ false: '#334155', true: '#6366F1' }}
+            thumbColor={prefs.habit_reminders ? '#A78BFA' : '#94A3B8'}
+          />
+        </View>
+      </GlassCard>
+
+      {/* Account Security & Password Section */}
+      <Text style={styles.sectionHeaderTitle}>Security & Account</Text>
+      <GlassCard style={styles.menuCard}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => setPasswordModalVisible(true)}>
+          <View style={[styles.menuIconBg, { backgroundColor: 'rgba(99, 102, 241, 0.2)' }]}>
+            <Ionicons name="key-outline" size={20} color="#818CF8" />
+          </View>
+          <Text style={styles.menuItemText}>Change Password</Text>
+          <Ionicons name="chevron-forward" size={18} color="#64748B" />
         </TouchableOpacity>
 
-        <Divider />
+        <View style={styles.divider} />
 
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/(tabs)/notifications')}
-        >
-          <View style={[styles.menuIconBg, { backgroundColor: '#FEF3C7' }]}>
-            <Ionicons name="notifications-outline" size={20} color="#D97706" />
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/analytics' as any)}>
+          <View style={[styles.menuIconBg, { backgroundColor: 'rgba(167, 139, 250, 0.2)' }]}>
+            <Ionicons name="bar-chart-outline" size={20} color="#A78BFA" />
           </View>
-          <Text style={[styles.menuText, { color: theme.colors.text }]}>Notification Preferences</Text>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
+          <Text style={styles.menuItemText}>Spending & Task Analytics Reports</Text>
+          <Ionicons name="chevron-forward" size={18} color="#64748B" />
         </TouchableOpacity>
+      </GlassCard>
 
-        <Divider />
-
-        <TouchableOpacity
-          style={styles.menuItem}
-          onPress={() => router.push('/(tabs)/subscriptions')}
-        >
-          <View style={[styles.menuIconBg, { backgroundColor: '#E0F2FE' }]}>
-            <Ionicons name="card-outline" size={20} color="#0284C7" />
-          </View>
-          <Text style={[styles.menuText, { color: theme.colors.text }]}>Manage Subscriptions</Text>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.textMuted} />
-        </TouchableOpacity>
-      </Card>
-
-      {/* Logout button */}
-      <Button
-        mode="outlined"
+      {/* Sign Out Button */}
+      <GlassButton
+        title="Sign Out"
         onPress={handleLogout}
-        icon="logout"
+        variant="danger"
+        icon="log-out-outline"
         style={styles.logoutBtn}
-        textColor="#EF4444"
-      >
-        Sign Out
-      </Button>
+      />
 
-      <Text style={[styles.versionText, { color: theme.colors.textMuted }]}>
-        Remindly Mobile v1.0.0 • Expo SDK 57
+      <Text style={styles.versionText}>
+        Remindly Premium Glass v1.0.0 • Mobile-First Glassmorphism Engine
       </Text>
+
+      {/* Change Password Modal */}
+      <GlassModal
+        visible={passwordModalVisible}
+        onClose={() => setPasswordModalVisible(false)}
+        title="Change Password"
+      >
+        <GlassInput
+          label="Current Password"
+          placeholder="••••••••"
+          value={oldPassword}
+          onChangeText={setOldPassword}
+          secureTextEntry
+          iconName="lock-closed-outline"
+        />
+
+        <GlassInput
+          label="New Password (min 8 chars)"
+          placeholder="••••••••"
+          value={newPassword}
+          onChangeText={setNewPassword}
+          secureTextEntry
+          iconName="key-outline"
+        />
+
+        <GlassInput
+          label="Confirm New Password"
+          placeholder="••••••••"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          iconName="shield-checkmark-outline"
+        />
+
+        <GlassButton
+          title="Update Password"
+          onPress={handleChangePasswordSubmit}
+          variant="primary"
+          style={{ marginTop: 8 }}
+        />
+      </GlassModal>
     </ScrollView>
   );
 }
@@ -115,53 +287,122 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#070A14',
   },
   content: {
     padding: 16,
+    paddingBottom: 40,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
-  profileCard: {
-    borderRadius: 20,
-    borderWidth: 1,
-    marginBottom: 24,
+  messageCard: {
+    marginBottom: 16,
+    borderColor: 'rgba(52, 211, 153, 0.4)',
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
   },
-  profileHeader: {
+  messageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    gap: 8,
   },
-  profileDetails: {
-    marginLeft: 16,
+  messageText: {
+    color: '#34D399',
+    fontSize: 13,
     flex: 1,
+  },
+  profileCard: {
+    marginBottom: 20,
+  },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 22,
+    backgroundColor: 'rgba(99, 102, 241, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#F8FAFC',
   },
   userName: {
     fontSize: 20,
     fontWeight: '800',
+    color: '#F8FAFC',
   },
   userEmail: {
     fontSize: 13,
+    color: '#94A3B8',
     marginTop: 2,
   },
-  statusBadge: {
-    alignSelf: 'flex-start',
+  badgeRow: {
+    flexDirection: 'row',
+    marginTop: 6,
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
-    marginTop: 8,
+    gap: 4,
+    borderWidth: 1,
   },
-  menuTitle: {
-    fontSize: 16,
+  badgeGreen: {
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+  },
+  badgeAmber: {
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+  },
+  badgeText: {
+    fontSize: 11,
     fontWeight: '700',
-    marginBottom: 12,
+  },
+  sectionHeaderTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    marginBottom: 10,
+    marginTop: 10,
   },
   menuCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    marginBottom: 24,
+    marginBottom: 18,
+    paddingVertical: 6,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  toggleTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  toggleSubtext: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    marginVertical: 4,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 12,
   },
   menuIconBg: {
     width: 36,
@@ -169,21 +410,21 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
-  menuText: {
+  menuItemText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
+    color: '#F8FAFC',
   },
   logoutBtn: {
-    borderRadius: 14,
-    borderColor: '#FCA5A5',
+    marginTop: 8,
     marginBottom: 16,
   },
   versionText: {
     textAlign: 'center',
-    fontSize: 12,
-    marginTop: 8,
+    fontSize: 11,
+    color: '#64748B',
   },
 });
