@@ -4,24 +4,22 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Switch,
   TouchableOpacity,
-  useColorScheme,
 } from 'react-native';
-import { TextInput, Button, Switch, SegmentedButtons } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useSubscriptionStore } from '../../store/useSubscriptionStore';
-import { BillingCycle } from '../../types';
-import { DarkTheme, LightTheme } from '../../theme/colors';
-
 import { useNotificationStore } from '../../store/useNotificationStore';
-import { scheduleSubscriptionRenewalAlert } from '../../services/notifications';
+import { scheduleOneWeekRenewalAlert } from '../../services/notifications';
+import { BillingCycle } from '../../types';
+import GlassCard from '../../components/GlassCard';
+import GlassInput from '../../components/GlassInput';
+import GlassButton from '../../components/GlassButton';
+
+const CYCLES: BillingCycle[] = ['monthly', 'yearly', 'weekly', 'quarterly'];
 
 export default function CreateSubscriptionScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
-
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Entertainment');
@@ -29,7 +27,7 @@ export default function CreateSubscriptionScreen() {
   const [renewalDate, setRenewalDate] = useState(
     new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
   );
-  const [paymentMethod, setPaymentMethod] = useState('Credit Card');
+  const [paymentMethod, setPaymentMethod] = useState('Credit Card (**** 4242)');
   const [autoRenew, setAutoRenew] = useState(true);
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -55,17 +53,20 @@ export default function CreateSubscriptionScreen() {
       payment_method: paymentMethod,
       status: 'active',
       description: description.trim(),
+      reminder_days_before: 7,
     });
 
     if (autoRenew) {
       addNotification({
         user: 'user-1',
-        title: 'Subscription Renewal Alert',
-        message: `${cleanName} ($${parsedAmount.toFixed(2)}) is scheduled to renew on ${renewalDate}.`,
+        title: '📅 1-Week Renewal Alert Scheduled',
+        message: `${cleanName} ($${parsedAmount.toFixed(2)}) will renew on ${renewalDate}. 7-day alert active.`,
         type: 'subscription_renewal',
         is_read: false,
+        target_type: 'subscription',
+        deep_link: '/(tabs)/subscriptions',
       });
-      await scheduleSubscriptionRenewalAlert(cleanName, renewalDate, parsedAmount);
+      await scheduleOneWeekRenewalAlert('sub-new', cleanName, renewalDate, parsedAmount);
     }
 
     setLoading(false);
@@ -73,93 +74,97 @@ export default function CreateSubscriptionScreen() {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <TextInput
-        label="Subscription Name *"
-        value={name}
-        onChangeText={setName}
-        mode="outlined"
-        placeholder="e.g. Netflix, Spotify, AWS"
-        style={styles.input}
-      />
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <GlassCard glow style={styles.card}>
+        <GlassInput
+          label="Subscription Name *"
+          placeholder="Netflix, Spotify, AWS..."
+          value={name}
+          onChangeText={setName}
+          iconName="card-outline"
+        />
 
-      <TextInput
-        label="Amount ($) *"
-        value={amount}
-        onChangeText={setAmount}
-        mode="outlined"
-        keyboardType="decimal-pad"
-        placeholder="14.99"
-        style={styles.input}
-      />
+        <GlassInput
+          label="Amount ($) *"
+          placeholder="14.99"
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="decimal-pad"
+          iconName="cash-outline"
+        />
 
-      <Text style={[styles.label, { color: theme.colors.text }]}>Billing Cycle</Text>
-      <SegmentedButtons
-        value={billingCycle}
-        onValueChange={(val) => setBillingCycle(val as BillingCycle)}
-        buttons={[
-          { value: 'monthly', label: 'Monthly' },
-          { value: 'yearly', label: 'Yearly' },
-          { value: 'weekly', label: 'Weekly' },
-        ]}
-        style={styles.segmented}
-      />
+        <Text style={styles.label}>Billing Cycle</Text>
+        <View style={styles.cycleRow}>
+          {CYCLES.map((c) => (
+            <TouchableOpacity
+              key={c}
+              style={[styles.cycleBtn, billingCycle === c && styles.cycleBtnActive]}
+              onPress={() => setBillingCycle(c)}
+            >
+              <Text style={[styles.cycleText, billingCycle === c && styles.cycleTextActive]}>
+                {c.toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      <TextInput
-        label="Category"
-        value={category}
-        onChangeText={setCategory}
-        mode="outlined"
-        placeholder="Entertainment, Software, Utility"
-        style={styles.input}
-      />
+        <GlassInput
+          label="Category"
+          placeholder="Entertainment, Music, Dev..."
+          value={category}
+          onChangeText={setCategory}
+          iconName="folder-outline"
+        />
 
-      <TextInput
-        label="Next Renewal Date (YYYY-MM-DD)"
-        value={renewalDate}
-        onChangeText={setRenewalDate}
-        mode="outlined"
-        style={styles.input}
-      />
+        <GlassInput
+          label="Next Renewal Date (YYYY-MM-DD)"
+          placeholder="2026-08-25"
+          value={renewalDate}
+          onChangeText={setRenewalDate}
+          iconName="calendar-outline"
+        />
 
-      <TextInput
-        label="Payment Method"
-        value={paymentMethod}
-        onChangeText={setPaymentMethod}
-        mode="outlined"
-        placeholder="Credit Card, PayPal, Apple Pay"
-        style={styles.input}
-      />
+        <GlassInput
+          label="Payment Method"
+          placeholder="Credit Card, PayPal..."
+          value={paymentMethod}
+          onChangeText={setPaymentMethod}
+          iconName="wallet-outline"
+        />
 
-      <View style={styles.switchRow}>
-        <Text style={[styles.label, { color: theme.colors.text }]}>Auto Renew</Text>
-        <Switch value={autoRenew} onValueChange={setAutoRenew} color={theme.colors.primary} />
-      </View>
+        <View style={styles.switchRow}>
+          <View>
+            <Text style={styles.switchLabel}>Auto Renew & 1-Week Alert</Text>
+            <Text style={styles.switchSublabel}>Automatically alert 7 days before renewal</Text>
+          </View>
+          <Switch
+            value={autoRenew}
+            onValueChange={setAutoRenew}
+            trackColor={{ false: '#334155', true: '#6366F1' }}
+            thumbColor={autoRenew ? '#A78BFA' : '#94A3B8'}
+          />
+        </View>
 
-      <TextInput
-        label="Notes / Description"
-        value={description}
-        onChangeText={setDescription}
-        mode="outlined"
-        multiline
-        numberOfLines={3}
-        style={styles.input}
-      />
+        <GlassInput
+          label="Notes / Description"
+          placeholder="Plan tier or details..."
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={3}
+          style={{ height: 80 }}
+          iconName="document-text-outline"
+        />
 
-      <Button
-        mode="contained"
-        onPress={handleSave}
-        loading={loading}
-        disabled={loading || !name || !amount}
-        style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]}
-        contentStyle={{ paddingVertical: 6 }}
-      >
-        Save Subscription
-      </Button>
+        <GlassButton
+          title="Save Subscription & Set Reminders"
+          onPress={handleSave}
+          loading={loading}
+          disabled={loading || !name || !amount}
+          variant="primary"
+          style={{ marginTop: 12 }}
+        />
+      </GlassCard>
     </ScrollView>
   );
 }
@@ -167,29 +172,64 @@ export default function CreateSubscriptionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#070A14',
   },
   content: {
     padding: 16,
+    paddingBottom: 40,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
-  input: {
-    marginBottom: 14,
+  card: {
+    marginBottom: 20,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: 6,
+    color: '#CBD5E1',
+    marginBottom: 8,
   },
-  segmented: {
-    marginBottom: 14,
+  cycleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  cycleBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.3)',
+    alignItems: 'center',
+  },
+  cycleBtnActive: {
+    backgroundColor: '#6366F1',
+    borderColor: '#8B5CF6',
+  },
+  cycleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+  cycleTextActive: {
+    color: '#FFFFFF',
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginVertical: 10,
+    marginVertical: 14,
   },
-  saveBtn: {
-    borderRadius: 14,
-    marginTop: 16,
+  switchLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  switchSublabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
   },
 });

@@ -5,101 +5,112 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  useColorScheme,
 } from 'react-native';
-import { Button, Card, Badge } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotificationStore } from '../../../store/useNotificationStore';
-import { DarkTheme, LightTheme } from '../../../theme/colors';
+import GlassCard from '../../../components/GlassCard';
 
 export default function NotificationsScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
-
-  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } =
+  const router = useRouter();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAll } =
     useNotificationStore();
+
+  const handleNotifPress = (item: any) => {
+    markAsRead(item.id);
+    if (item.deep_link) {
+      router.push(item.deep_link as any);
+    }
+  };
 
   const getNotifIcon = (type: string) => {
     switch (type) {
       case 'subscription_renewal':
-        return { icon: 'card-outline', color: '#3B82F6', bg: '#EFF6FF' };
+        return { icon: 'card-outline', color: '#818CF8', bg: 'rgba(99, 102, 241, 0.2)' };
       case 'task_reminder':
-        return { icon: 'checkbox-outline', color: '#10B981', bg: '#ECFDF5' };
+        return { icon: 'checkbox-outline', color: '#34D399', bg: 'rgba(52, 211, 153, 0.2)' };
+      case 'overdue_task':
+        return { icon: 'warning-outline', color: '#F87171', bg: 'rgba(239, 68, 68, 0.2)' };
       case 'habit_reminder':
-        return { icon: 'flame-outline', color: '#F59E0B', bg: '#FEF3C7' };
+        return { icon: 'flame-outline', color: '#FBBF24', bg: 'rgba(245, 158, 11, 0.2)' };
       default:
-        return { icon: 'notifications-outline', color: '#8B5CF6', bg: '#F5F3FF' };
+        return { icon: 'notifications-outline', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.2)' };
     }
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={styles.container}>
       {/* Header bar */}
-      <View style={styles.topHeader}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Notifications</Text>
-          {unreadCount > 0 && <Badge size={22}>{unreadCount}</Badge>}
+      <GlassCard glow style={styles.topHeader}>
+        <View style={styles.headerRow}>
+          <View style={styles.titleGroup}>
+            <Text style={styles.headerTitle}>Notifications Center</Text>
+            {unreadCount > 0 && (
+              <View style={styles.badgeChip}>
+                <Text style={styles.badgeText}>{unreadCount} new</Text>
+              </View>
+            )}
+          </View>
+
+          <View style={styles.actionsRow}>
+            {unreadCount > 0 && (
+              <TouchableOpacity onPress={markAllAsRead}>
+                <Text style={styles.actionText}>Mark all read</Text>
+              </TouchableOpacity>
+            )}
+            {notifications.length > 0 && (
+              <TouchableOpacity onPress={clearAll}>
+                <Text style={[styles.actionText, { color: '#F87171' }]}>Clear</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          {unreadCount > 0 && (
-            <TouchableOpacity onPress={markAllAsRead}>
-              <Text style={[styles.markAllText, { color: theme.colors.primary }]}>Mark all read</Text>
-            </TouchableOpacity>
-          )}
-          {notifications.length > 0 && (
-            <TouchableOpacity onPress={useNotificationStore.getState().clearAll}>
-              <Text style={[styles.markAllText, { color: '#EF4444' }]}>Clear</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
+      </GlassCard>
 
       <FlatList
         data={notifications}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="notifications-off-outline" size={48} color={theme.colors.textMuted} />
-            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>No notifications yet</Text>
-          </View>
+          <GlassCard style={styles.emptyState}>
+            <Ionicons name="notifications-off-outline" size={48} color="#64748B" />
+            <Text style={styles.emptyText}>No notifications yet</Text>
+          </GlassCard>
         }
         renderItem={({ item }) => {
           const config = getNotifIcon(item.type);
           return (
-            <TouchableOpacity onPress={() => markAsRead(item.id)}>
-              <Card
-                style={[
-                  styles.card,
-                  { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder },
-                  !item.is_read && { borderWidth: 1.5, borderColor: theme.colors.primary },
-                ]}
-              >
-                <Card.Content style={styles.cardContent}>
-                  <View style={[styles.iconBg, { backgroundColor: config.bg }]}>
-                    <Ionicons name={config.icon as any} size={22} color={config.color} />
-                  </View>
+            <GlassCard
+              style={[
+                styles.card,
+                !item.is_read && styles.unreadCard,
+              ]}
+              onPress={() => handleNotifPress(item)}
+            >
+              <View style={styles.cardContent}>
+                <View style={[styles.iconBg, { backgroundColor: config.bg }]}>
+                  <Ionicons name={config.icon as any} size={22} color={config.color} />
+                </View>
 
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={[styles.notifTitle, { color: theme.colors.text }]}>{item.title}</Text>
-                    <Text style={[styles.notifMessage, { color: theme.colors.textSecondary }]}>
-                      {item.message}
-                    </Text>
-                    <Text style={[styles.timeText, { color: theme.colors.textMuted }]}>
-                      {new Date(item.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.notifTitle}>{item.title}</Text>
+                  <Text style={styles.notifMessage}>{item.message}</Text>
+                  <Text style={styles.timeText}>
+                    {new Date(item.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Tap to view
+                  </Text>
+                </View>
 
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    {!item.is_read && <View style={styles.unreadDot} />}
-                    <TouchableOpacity onPress={() => deleteNotification(item.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="close-circle-outline" size={20} color={theme.colors.textMuted} />
-                    </TouchableOpacity>
-                  </View>
-                </Card.Content>
-              </Card>
-            </TouchableOpacity>
+                <View style={{ alignItems: 'flex-end', gap: 10 }}>
+                  {!item.is_read && <View style={styles.unreadDot} />}
+                  <TouchableOpacity
+                    onPress={() => deleteNotification(item.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons name="close-circle-outline" size={20} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </GlassCard>
           );
         }}
       />
@@ -110,24 +121,53 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#070A14',
   },
   topHeader: {
+    margin: 16,
+    marginBottom: 10,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    paddingBottom: 8,
+  },
+  titleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '800',
+    color: '#F8FAFC',
   },
-  markAllText: {
+  badgeChip: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  badgeText: {
+    color: '#F87171',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  actionText: {
     fontSize: 13,
+    color: '#818CF8',
     fontWeight: '700',
   },
   listContent: {
     padding: 16,
+    paddingBottom: 40,
   },
   emptyState: {
     alignItems: 'center',
@@ -136,11 +176,14 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 12,
     fontSize: 14,
+    color: '#94A3B8',
   },
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
     marginBottom: 10,
+  },
+  unreadCard: {
+    borderColor: 'rgba(99, 102, 241, 0.5)',
+    backgroundColor: 'rgba(24, 34, 56, 0.85)',
   },
   cardContent: {
     flexDirection: 'row',
@@ -156,20 +199,22 @@ const styles = StyleSheet.create({
   notifTitle: {
     fontSize: 14,
     fontWeight: '700',
+    color: '#F8FAFC',
   },
   notifMessage: {
     fontSize: 12,
+    color: '#CBD5E1',
     marginTop: 2,
   },
   timeText: {
     fontSize: 10,
+    color: '#64748B',
     marginTop: 4,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#4F46E5',
-    marginLeft: 8,
+    backgroundColor: '#818CF8',
   },
 });

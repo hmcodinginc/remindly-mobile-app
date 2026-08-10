@@ -3,6 +3,7 @@ export interface User {
   email: string;
   name?: string;
   avatar?: string;
+  emailVerified?: boolean;
   created: string;
   updated: string;
 }
@@ -24,6 +25,7 @@ export interface Subscription {
   status: SubscriptionStatus;
   description?: string;
   icon?: string;
+  reminder_days_before?: number; // e.g. 7 for 1 week before
   created: string;
   updated: string;
 }
@@ -75,7 +77,7 @@ export interface Habit {
   updated: string;
 }
 
-export type NotificationType = 'subscription_renewal' | 'task_reminder' | 'habit_reminder' | 'routine_reminder' | 'system';
+export type NotificationType = 'subscription_renewal' | 'task_reminder' | 'habit_reminder' | 'routine_reminder' | 'system' | 'overdue_task';
 
 export interface NotificationItem {
   id: string;
@@ -85,6 +87,9 @@ export interface NotificationItem {
   type: NotificationType;
   is_read: boolean;
   scheduled_for?: string;
+  target_type?: 'subscription' | 'task' | 'habit' | 'routine' | 'system';
+  target_id?: string;
+  deep_link?: string;
   created: string;
   updated: string;
 }
@@ -109,6 +114,8 @@ export interface UserSettings {
     renewal_alerts: boolean;
     habit_reminders: boolean;
     task_reminders: boolean;
+    overdue_alerts: boolean;
+    one_week_renewal_alerts: boolean;
   };
   privacy_mode: boolean;
 }
@@ -120,3 +127,4 @@ export interface ActivityLog {
   details?: string;
   timestamp: string;
 }
+

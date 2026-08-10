@@ -7,26 +7,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  useColorScheme,
 } from 'react-native';
-import { TextInput, Button, HelperText, ActivityIndicator } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/useAuthStore';
-import { DarkTheme, LightTheme } from '../../theme/colors';
 import RemindlyLogo from '../../components/RemindlyLogo';
+import GlassCard from '../../components/GlassCard';
+import GlassInput from '../../components/GlassInput';
+import GlassButton from '../../components/GlassButton';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [secureText, setSecureText] = useState(true);
 
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, loginAsDemo, isLoading, error, clearError, message } = useAuthStore();
 
   const handleLogin = async () => {
     if (!email || !password) return;
@@ -36,110 +32,104 @@ export default function LoginScreen() {
     }
   };
 
-  const handleBypass = () => {
-    // Quick demo login for offline/development testing
+  const handleDemo = () => {
+    loginAsDemo();
     router.replace('/(tabs)/dashboard');
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         {/* Header Branding */}
         <View style={styles.header}>
-          <View style={{ marginBottom: 12 }}>
+          <View style={styles.logoWrapper}>
             <RemindlyLogo size={88} />
           </View>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Remindly</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+          <Text style={styles.title}>Remindly</Text>
+          <Text style={styles.subtitle}>
             Subscriptions, Tasks & Habit Tracker
           </Text>
         </View>
 
-        {/* Card Form */}
-        <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
-          <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Welcome Back</Text>
-          <Text style={[styles.cardSubtitle, { color: theme.colors.textSecondary }]}>
-            Sign in to sync your PocketBase account
+        {/* Glass Card Form */}
+        <GlassCard glow style={styles.card}>
+          <Text style={styles.cardTitle}>Welcome Back</Text>
+          <Text style={styles.cardSubtitle}>
+            Sign in to sync your subscriptions, tasks & habits
           </Text>
 
           {error && (
-            <View style={[styles.errorBox, { backgroundColor: '#FEE2E2' }]}>
-              <Ionicons name="alert-circle" size={20} color="#DC2626" />
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle" size={18} color="#F87171" />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
 
-          <TextInput
-            label="Email"
+          {message && (
+            <View style={styles.messageBox}>
+              <Ionicons name="checkmark-circle" size={18} color="#34D399" />
+              <Text style={styles.messageText}>{message}</Text>
+            </View>
+          )}
+
+          <GlassInput
+            label="Email Address"
+            placeholder="name@example.com"
             value={email}
             onChangeText={(t) => {
               clearError();
               setEmail(t);
             }}
-            mode="outlined"
             keyboardType="email-address"
             autoCapitalize="none"
-            left={<TextInput.Icon icon="email-outline" />}
-            style={styles.input}
+            iconName="mail-outline"
           />
 
-          <TextInput
+          <GlassInput
             label="Password"
+            placeholder="••••••••"
             value={password}
             onChangeText={(t) => {
               clearError();
               setPassword(t);
             }}
-            mode="outlined"
             secureTextEntry={secureText}
-            left={<TextInput.Icon icon="lock-outline" />}
-            right={
-              <TextInput.Icon
-                icon={secureText ? 'eye-outline' : 'eye-off-outline'}
-                onPress={() => setSecureText(!secureText)}
-              />
-            }
-            style={styles.input}
+            iconName="lock-closed-outline"
+            rightIcon={secureText ? 'eye-outline' : 'eye-off-outline'}
+            onRightIconPress={() => setSecureText(!secureText)}
           />
 
           <TouchableOpacity
             style={styles.forgotBtn}
             onPress={() => router.push('/(auth)/forgot-password')}
           >
-            <Text style={[styles.forgotText, { color: theme.colors.primary }]}>Forgot Password?</Text>
+            <Text style={styles.forgotText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          <Button
-            mode="contained"
+          <GlassButton
+            title="Sign In"
             onPress={handleLogin}
             loading={isLoading}
-            disabled={isLoading}
-            style={[styles.loginBtn, { backgroundColor: theme.colors.primary }]}
-            contentStyle={{ paddingVertical: 6 }}
-          >
-            Sign In
-          </Button>
+            variant="primary"
+            style={styles.loginBtn}
+          />
 
-          <Button
-            mode="outlined"
-            onPress={handleBypass}
-            style={styles.demoBtn}
-            textColor={theme.colors.textSecondary}
-          >
-            Explore App (Demo Mode)
-          </Button>
-        </View>
+          <GlassButton
+            title="Explore Demo Mode"
+            onPress={handleDemo}
+            variant="secondary"
+            icon="sparkles-outline"
+          />
+        </GlassCard>
 
-        {/* Register link */}
+        {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: theme.colors.textSecondary }]}>
-            Don't have an account?{' '}
-          </Text>
+          <Text style={styles.footerText}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-            <Text style={[styles.signUpText, { color: theme.colors.primary }]}>Create Account</Text>
+            <Text style={styles.signUpText}>Create Account</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -150,67 +140,83 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#070A14',
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 28,
   },
-  logoContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
+  logoWrapper: {
+    marginBottom: 14,
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
   },
   title: {
     fontSize: 32,
     fontWeight: '800',
+    color: '#F8FAFC',
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
+    color: '#94A3B8',
     marginTop: 4,
   },
   card: {
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+    marginBottom: 24,
   },
   cardTitle: {
     fontSize: 22,
     fontWeight: '700',
+    color: '#F8FAFC',
   },
   cardSubtitle: {
     fontSize: 13,
+    color: '#94A3B8',
     marginBottom: 20,
-    marginTop: 2,
+    marginTop: 4,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
     gap: 8,
   },
   errorText: {
-    color: '#DC2626',
+    color: '#F87171',
     fontSize: 13,
     flex: 1,
   },
-  input: {
-    marginBottom: 14,
+  messageBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  messageText: {
+    color: '#34D399',
+    fontSize: 13,
+    flex: 1,
   },
   forgotBtn: {
     alignSelf: 'flex-end',
@@ -218,25 +224,24 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     fontSize: 13,
+    color: '#A78BFA',
     fontWeight: '600',
   },
   loginBtn: {
-    borderRadius: 14,
     marginBottom: 12,
-  },
-  demoBtn: {
-    borderRadius: 14,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 28,
+    marginTop: 12,
   },
   footerText: {
     fontSize: 14,
+    color: '#94A3B8',
   },
   signUpText: {
     fontSize: 14,
+    color: '#818CF8',
     fontWeight: '700',
   },
 });

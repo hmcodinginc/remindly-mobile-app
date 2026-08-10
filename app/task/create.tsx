@@ -4,27 +4,27 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  useColorScheme,
+  Switch,
+  TouchableOpacity,
 } from 'react-native';
-import { TextInput, Button, Switch, SegmentedButtons } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useTaskStore } from '../../store/useTaskStore';
-import { TaskPriority } from '../../types';
-import { DarkTheme, LightTheme } from '../../theme/colors';
-
 import { useNotificationStore } from '../../store/useNotificationStore';
 import { scheduleTaskReminderAlert } from '../../services/notifications';
+import { TaskPriority } from '../../types';
+import GlassCard from '../../components/GlassCard';
+import GlassInput from '../../components/GlassInput';
+import GlassButton from '../../components/GlassButton';
+import { PriorityColors } from '../../theme/colors';
+
+const PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 
 export default function CreateTaskScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
-
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
-  const [dueDate, setDueDate] = useState(new Date().toISOString().split('T')[0]);
+  const [dueDate, setDueDate] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
   const [reminder, setReminder] = useState(true);
   const [labels, setLabels] = useState('Work, Mobile');
   const [loading, setLoading] = useState(false);
@@ -50,12 +50,14 @@ export default function CreateTaskScreen() {
     if (reminder) {
       addNotification({
         user: 'user-1',
-        title: 'Task Reminder Created',
+        title: '⏰ Task Reminder Scheduled',
         message: `Reminder set for task "${cleanTitle}" due on ${dueDate}.`,
         type: 'task_reminder',
         is_read: false,
+        target_type: 'task',
+        deep_link: '/(tabs)/tasks',
       });
-      await scheduleTaskReminderAlert(cleanTitle, dueDate);
+      await scheduleTaskReminderAlert('task-new', cleanTitle, dueDate);
     }
 
     setLoading(false);
@@ -63,75 +65,87 @@ export default function CreateTaskScreen() {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-    >
-      <TextInput
-        label="Task Title *"
-        value={title}
-        onChangeText={setTitle}
-        mode="outlined"
-        placeholder="e.g. Prepare presentation, Submit report"
-        style={styles.input}
-      />
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <GlassCard glow style={styles.card}>
+        <GlassInput
+          label="Task Title *"
+          placeholder="e.g. Prepare presentation, Submit report"
+          value={title}
+          onChangeText={setTitle}
+          iconName="checkbox-outline"
+        />
 
-      <TextInput
-        label="Description"
-        value={description}
-        onChangeText={setDescription}
-        mode="outlined"
-        multiline
-        numberOfLines={3}
-        style={styles.input}
-      />
+        <GlassInput
+          label="Description"
+          placeholder="Task details or breakdown..."
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={3}
+          style={{ height: 80 }}
+          iconName="document-text-outline"
+        />
 
-      <Text style={[styles.label, { color: theme.colors.text }]}>Priority</Text>
-      <SegmentedButtons
-        value={priority}
-        onValueChange={(val) => setPriority(val as TaskPriority)}
-        buttons={[
-          { value: 'low', label: 'Low' },
-          { value: 'medium', label: 'Med' },
-          { value: 'high', label: 'High' },
-          { value: 'urgent', label: 'Urgent' },
-        ]}
-        style={styles.segmented}
-      />
+        <Text style={styles.label}>Priority Level</Text>
+        <View style={styles.priorityRow}>
+          {PRIORITIES.map((p) => {
+            const pStyle = PriorityColors[p];
+            const isSelected = priority === p;
+            return (
+              <TouchableOpacity
+                key={p}
+                style={[
+                  styles.priorityBtn,
+                  { backgroundColor: isSelected ? pStyle.bg : 'rgba(15, 23, 42, 0.75)', borderColor: pStyle.border },
+                ]}
+                onPress={() => setPriority(p)}
+              >
+                <Text style={[styles.priorityBtnText, { color: pStyle.text }]}>
+                  {p.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
-      <TextInput
-        label="Due Date (YYYY-MM-DD)"
-        value={dueDate}
-        onChangeText={setDueDate}
-        mode="outlined"
-        style={styles.input}
-      />
+        <GlassInput
+          label="Due Date (YYYY-MM-DD)"
+          placeholder="2026-08-15"
+          value={dueDate}
+          onChangeText={setDueDate}
+          iconName="calendar-outline"
+        />
 
-      <TextInput
-        label="Labels (comma separated)"
-        value={labels}
-        onChangeText={setLabels}
-        mode="outlined"
-        placeholder="Finance, Health, Work"
-        style={styles.input}
-      />
+        <GlassInput
+          label="Labels (comma separated)"
+          placeholder="Finance, Work, Personal"
+          value={labels}
+          onChangeText={setLabels}
+          iconName="pricetags-outline"
+        />
 
-      <View style={styles.switchRow}>
-        <Text style={[styles.label, { color: theme.colors.text }]}>Enable Reminder</Text>
-        <Switch value={reminder} onValueChange={setReminder} color={theme.colors.primary} />
-      </View>
+        <View style={styles.switchRow}>
+          <View>
+            <Text style={styles.switchLabel}>Schedule Local Push Reminder</Text>
+            <Text style={styles.switchSublabel}>Receive notification alert on mobile/web</Text>
+          </View>
+          <Switch
+            value={reminder}
+            onValueChange={setReminder}
+            trackColor={{ false: '#334155', true: '#6366F1' }}
+            thumbColor={reminder ? '#A78BFA' : '#94A3B8'}
+          />
+        </View>
 
-      <Button
-        mode="contained"
-        onPress={handleSave}
-        loading={loading}
-        disabled={loading || !title}
-        style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]}
-        contentStyle={{ paddingVertical: 6 }}
-      >
-        Save Task
-      </Button>
+        <GlassButton
+          title="Save Task"
+          onPress={handleSave}
+          loading={loading}
+          disabled={loading || !title}
+          variant="primary"
+          style={{ marginTop: 12 }}
+        />
+      </GlassCard>
     </ScrollView>
   );
 }
@@ -139,29 +153,54 @@ export default function CreateTaskScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#070A14',
   },
   content: {
     padding: 16,
+    paddingBottom: 40,
+    maxWidth: 600,
+    width: '100%',
+    alignSelf: 'center',
   },
-  input: {
-    marginBottom: 14,
+  card: {
+    marginBottom: 20,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    marginBottom: 6,
+    color: '#CBD5E1',
+    marginBottom: 8,
   },
-  segmented: {
-    marginBottom: 14,
+  priorityRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  priorityBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  priorityBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginVertical: 10,
+    marginVertical: 14,
   },
-  saveBtn: {
-    borderRadius: 14,
-    marginTop: 16,
+  switchLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  switchSublabel: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginTop: 2,
   },
 });

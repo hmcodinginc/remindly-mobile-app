@@ -7,113 +7,93 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  useColorScheme,
 } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import pb from '../../services/pocketbase';
-import { DarkTheme, LightTheme } from '../../theme/colors';
+import { useAuthStore } from '../../store/useAuthStore';
+import GlassCard from '../../components/GlassCard';
+import GlassInput from '../../components/GlassInput';
+import GlassButton from '../../components/GlassButton';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? DarkTheme : LightTheme;
-
   const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { requestPasswordReset, isLoading, error, message, clearError } = useAuthStore();
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const handleResetPassword = async () => {
     if (!email) {
-      setError('Please enter your registered email address.');
+      setLocalError('Please enter your registered email address.');
       return;
     }
-    setLoading(true);
-    setError(null);
-    setMessage(null);
-
-    try {
-      if (pb.authStore.isValid || pb.collection) {
-        await pb.collection('users').requestPasswordReset(email.trim());
-      }
-      setMessage('Password reset instructions have been sent to your email.');
-    } catch (e: any) {
-      // Even if offline/failed, show helpful guidance
-      setMessage('Password reset email sent if account exists.');
-    } finally {
-      setLoading(false);
-    }
+    setLocalError(null);
+    clearError();
+    await requestPasswordReset(email.trim());
   };
+
+  const displayError = localError || error;
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          <Ionicons name="arrow-back" size={24} color="#F8FAFC" />
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>Reset Password</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-            Enter your email to receive a password reset link
+          <Text style={styles.title}>Reset Password</Text>
+          <Text style={styles.subtitle}>
+            Enter your account email to receive a password reset link
           </Text>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.cardBorder }]}>
-          {error && (
-            <View style={[styles.alertBox, { backgroundColor: '#FEE2E2' }]}>
-              <Ionicons name="alert-circle" size={20} color="#DC2626" />
-              <Text style={{ color: '#DC2626', fontSize: 13, flex: 1 }}>{error}</Text>
+        <GlassCard glow style={styles.card}>
+          {displayError && (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle" size={18} color="#F87171" />
+              <Text style={styles.errorText}>{displayError}</Text>
             </View>
           )}
 
           {message && (
-            <View style={[styles.alertBox, { backgroundColor: '#D1FAE5' }]}>
-              <Ionicons name="checkmark-circle" size={20} color="#059669" />
-              <Text style={{ color: '#059669', fontSize: 13, flex: 1 }}>{message}</Text>
+            <View style={styles.messageBox}>
+              <Ionicons name="checkmark-circle" size={18} color="#34D399" />
+              <Text style={styles.messageText}>{message}</Text>
             </View>
           )}
 
-          <TextInput
-            label="Email Address"
+          <GlassInput
+            label="Registered Email"
+            placeholder="name@example.com"
             value={email}
             onChangeText={(t) => {
-              setError(null);
+              setLocalError(null);
+              clearError();
               setEmail(t);
             }}
-            mode="outlined"
             keyboardType="email-address"
             autoCapitalize="none"
-            left={<TextInput.Icon icon="email-outline" />}
-            style={styles.input}
+            iconName="mail-outline"
           />
 
-          <Button
-            mode="contained"
+          <GlassButton
+            title="Send Reset Link"
             onPress={handleResetPassword}
-            loading={loading}
-            disabled={loading}
-            style={[styles.resetBtn, { backgroundColor: theme.colors.primary }]}
-            contentStyle={{ paddingVertical: 6 }}
-          >
-            Send Reset Link
-          </Button>
+            loading={isLoading}
+            variant="primary"
+            style={styles.resetBtn}
+          />
 
-          <Button
-            mode="text"
+          <GlassButton
+            title="Back to Sign In"
             onPress={() => router.push('/(auth)/login')}
-            textColor={theme.colors.primary}
+            variant="ghost"
             style={{ marginTop: 8 }}
-          >
-            Back to Sign In
-          </Button>
-        </View>
+          />
+        </GlassCard>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -122,14 +102,24 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#070A14',
   },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
     justifyContent: 'center',
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
   backBtn: {
     marginBottom: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   header: {
     marginBottom: 24,
@@ -137,29 +127,50 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '800',
+    color: '#F8FAFC',
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
+    color: '#94A3B8',
     marginTop: 4,
   },
   card: {
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    elevation: 4,
+    marginBottom: 20,
   },
-  alertBox: {
+  errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
     gap: 8,
   },
-  input: {
+  errorText: {
+    color: '#F87171',
+    fontSize: 13,
+    flex: 1,
+  },
+  messageBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(52, 211, 153, 0.3)',
+    padding: 12,
+    borderRadius: 12,
     marginBottom: 16,
+    gap: 8,
+  },
+  messageText: {
+    color: '#34D399',
+    fontSize: 13,
+    flex: 1,
   },
   resetBtn: {
-    borderRadius: 14,
+    marginTop: 8,
   },
 });
