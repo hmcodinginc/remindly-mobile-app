@@ -16,6 +16,8 @@ import GlassCard from '../../../components/GlassCard';
 import GlassModal from '../../../components/GlassModal';
 import GlassInput from '../../../components/GlassInput';
 import GlassButton from '../../../components/GlassButton';
+import GlassPicker from '../../../components/GlassPicker';
+import GlassDatePicker from '../../../components/GlassDatePicker';
 import { confirmDelete } from '../../../utils/confirmDelete';
 
 const CATEGORIES = ['All', 'Entertainment', 'Music', 'Developer Tools', 'Cloud Storage', 'Utilities'];
@@ -292,42 +294,51 @@ export default function SubscriptionsScreen() {
           iconName="cash-outline"
         />
 
-        <Text style={styles.modalLabel}>Billing Cycle</Text>
-        <View style={styles.cycleRow}>
-          {CYCLES.map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.cycleBtn, cycle === c && styles.cycleBtnActive]}
-              onPress={() => setCycle(c)}
-            >
-              <Text style={[styles.cycleText, cycle === c && styles.cycleTextActive]}>
-                {c.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <GlassPicker
+          label="Billing Cycle"
+          value={cycle}
+          options={[
+            { label: 'Monthly', value: 'monthly' },
+            { label: 'Yearly', value: 'yearly' },
+            { label: 'Weekly', value: 'weekly' },
+            { label: 'Quarterly', value: 'quarterly' },
+          ]}
+          onSelect={(v) => setCycle(v as BillingCycle)}
+          iconName="repeat-outline"
+        />
 
-        <GlassInput
+        <GlassPicker
           label="Category"
-          placeholder="Entertainment, Music, Dev..."
           value={category}
-          onChangeText={setCategory}
+          options={[
+            { label: 'Entertainment', value: 'Entertainment', icon: 'tv-outline' },
+            { label: 'Music', value: 'Music', icon: 'musical-notes-outline' },
+            { label: 'Developer Tools', value: 'Developer Tools', icon: 'code-slash-outline' },
+            { label: 'Cloud Storage', value: 'Cloud Storage', icon: 'cloud-outline' },
+            { label: 'Utilities & Bills', value: 'Utilities', icon: 'flash-outline' },
+          ]}
+          onSelect={setCategory}
           iconName="folder-outline"
         />
 
-        <GlassInput
-          label="Next Renewal Date (YYYY-MM-DD)"
-          placeholder="2026-08-25"
+        <GlassDatePicker
+          label="Next Renewal Date"
           value={renewalDate}
-          onChangeText={setRenewalDate}
-          iconName="calendar-outline"
+          onSelect={setRenewalDate}
         />
 
-        <GlassInput
+        <GlassPicker
           label="Payment Method"
-          placeholder="Credit Card, PayPal..."
           value={paymentMethod}
-          onChangeText={setPaymentMethod}
+          options={[
+            { label: 'Credit Card (**** 4242)', value: 'Credit Card (**** 4242)', icon: 'card-outline' },
+            { label: 'Debit Card', value: 'Debit Card', icon: 'card-outline' },
+            { label: 'Bank Transfer / ACH', value: 'Bank Transfer', icon: 'business-outline' },
+            { label: 'Cash', value: 'Cash', icon: 'cash-outline' },
+            { label: 'UPI / Wallet', value: 'UPI', icon: 'qr-code-outline' },
+            { label: 'Apple Pay / Google Pay', value: 'Apple Pay', icon: 'phone-portrait-outline' },
+          ]}
+          onSelect={setPaymentMethod}
           iconName="wallet-outline"
         />
 
