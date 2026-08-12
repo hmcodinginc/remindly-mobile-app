@@ -16,6 +16,8 @@ import GlassCard from '../../../components/GlassCard';
 import GlassModal from '../../../components/GlassModal';
 import GlassInput from '../../../components/GlassInput';
 import GlassButton from '../../../components/GlassButton';
+import GlassPicker from '../../../components/GlassPicker';
+import GlassDatePicker from '../../../components/GlassDatePicker';
 import { PriorityColors } from '../../../theme/colors';
 import { confirmDelete } from '../../../utils/confirmDelete';
 
@@ -294,34 +296,23 @@ export default function TasksScreen() {
           iconName="document-text-outline"
         />
 
-        <Text style={styles.modalLabel}>Priority Level</Text>
-        <View style={styles.priorityRow}>
-          {PRIORITIES.map((p) => {
-            const pStyle = PriorityColors[p];
-            const isSelected = priority === p;
-            return (
-              <TouchableOpacity
-                key={p}
-                style={[
-                  styles.priorityBtn,
-                  { backgroundColor: isSelected ? pStyle.bg : 'rgba(15, 23, 42, 0.75)', borderColor: pStyle.border },
-                ]}
-                onPress={() => setPriority(p)}
-              >
-                <Text style={[styles.priorityBtnText, { color: pStyle.text }]}>
-                  {p.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <GlassPicker
+          label="Priority Level"
+          value={priority}
+          options={[
+            { label: 'Urgent Priority', value: 'urgent', icon: 'alert-circle-outline', color: '#F87171' },
+            { label: 'High Priority', value: 'high', icon: 'warning-outline', color: '#FBBF24' },
+            { label: 'Medium Priority', value: 'medium', icon: 'remove-circle-outline', color: '#818CF8' },
+            { label: 'Low Priority', value: 'low', icon: 'arrow-down-circle-outline', color: '#34D399' },
+          ]}
+          onSelect={(v) => setPriority(v as TaskPriority)}
+          iconName="alert-circle-outline"
+        />
 
-        <GlassInput
-          label="Due Date (YYYY-MM-DD)"
-          placeholder="2026-08-15"
+        <GlassDatePicker
+          label="Due Date"
           value={dueDate}
-          onChangeText={setDueDate}
-          iconName="calendar-outline"
+          onSelect={setDueDate}
         />
 
         <GlassButton

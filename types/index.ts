@@ -8,7 +8,7 @@ export interface User {
   updated: string;
 }
 
-export type BillingCycle = 'monthly' | 'yearly' | 'weekly' | 'quarterly';
+export type BillingCycle = 'monthly' | 'yearly' | 'weekly' | 'quarterly' | 'daily' | 'custom';
 export type SubscriptionStatus = 'active' | 'cancelled' | 'paused' | 'expired';
 
 export interface Subscription {
@@ -48,13 +48,59 @@ export interface Task {
   updated: string;
 }
 
+export type ReminderType = 'task' | 'subscription' | 'payment' | 'appointment' | 'renewal' | 'custom';
+
+export type ReminderCategory =
+  | 'Entertainment'
+  | 'Bills'
+  | 'Health'
+  | 'Work'
+  | 'Personal'
+  | 'Vehicle & Service'
+  | 'Birthdays'
+  | 'Subscriptions'
+  | 'Payments'
+  | 'General';
+
+export type PaymentMethodOption =
+  | 'Credit Card (**** 4242)'
+  | 'Debit Card'
+  | 'Bank Transfer'
+  | 'Cash'
+  | 'UPI'
+  | 'Apple / Google Pay';
+
+export type RepeatCycleOption = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+
+export interface GenericReminder {
+  id: string;
+  user: string;
+  title: string;
+  type: ReminderType;
+  category: ReminderCategory | string;
+  due_date: string;
+  due_time?: string;
+  amount?: number;
+  currency?: string;
+  billing_cycle?: BillingCycle;
+  payment_method?: PaymentMethodOption | string;
+  priority?: TaskPriority;
+  reminder_enabled: boolean;
+  advance_notice_days?: number; // e.g. 7 for 1 week before, 1 for 1 day before
+  auto_pay?: boolean;
+  status: 'pending' | 'completed' | 'overdue' | 'cancelled';
+  description?: string;
+  created: string;
+  updated: string;
+}
+
 export interface Routine {
   id: string;
   user: string;
   title: string;
   description?: string;
   frequency: 'daily' | 'weekly' | 'monthly';
-  target_days?: string[]; // e.g. ['Mon', 'Tue', 'Wed']
+  target_days?: string[];
   times_per_day: number;
   category?: string;
   completed_today?: boolean;
@@ -70,14 +116,14 @@ export interface Habit {
   streak_count: number;
   best_streak: number;
   last_completed_date?: string;
-  completions_history: string[]; // ISO date strings
+  completions_history: string[];
   category?: string;
   icon?: string;
   created: string;
   updated: string;
 }
 
-export type NotificationType = 'subscription_renewal' | 'task_reminder' | 'habit_reminder' | 'routine_reminder' | 'system' | 'overdue_task';
+export type NotificationType = 'subscription_renewal' | 'task_reminder' | 'habit_reminder' | 'routine_reminder' | 'system' | 'overdue_task' | 'general_reminder';
 
 export interface NotificationItem {
   id: string;
@@ -87,7 +133,7 @@ export interface NotificationItem {
   type: NotificationType;
   is_read: boolean;
   scheduled_for?: string;
-  target_type?: 'subscription' | 'task' | 'habit' | 'routine' | 'system';
+  target_type?: 'subscription' | 'task' | 'habit' | 'routine' | 'system' | 'reminder';
   target_id?: string;
   deep_link?: string;
   created: string;
@@ -127,4 +173,3 @@ export interface ActivityLog {
   details?: string;
   timestamp: string;
 }
-
