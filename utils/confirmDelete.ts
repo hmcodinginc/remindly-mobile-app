@@ -20,3 +20,25 @@ export const confirmDelete = (
     ]);
   }
 };
+
+export const confirmAction = (
+  title: string,
+  message: string,
+  onConfirm: () => void | Promise<void>,
+  actionText = 'Sign Out'
+) => {
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${message}`)) {
+      onConfirm();
+    }
+  } else {
+    Alert.alert(title, message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: actionText,
+        style: 'destructive',
+        onPress: () => onConfirm(),
+      },
+    ]);
+  }
+};

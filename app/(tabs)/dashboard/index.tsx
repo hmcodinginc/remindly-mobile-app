@@ -119,7 +119,7 @@ export default function DashboardScreen() {
               <RemindlyLogo size={52} showBackground={true} />
             </View>
             <View style={styles.welcomeTextGroup}>
-              <Text style={styles.greetingText}>Hello, {user?.name || 'Friend'} 👋</Text>
+              <Text style={styles.greetingText}>Hello, {user?.name || 'Friend'}</Text>
               <Text style={styles.welcomeSubtext}>General Reminder & Subscription Hub</Text>
             </View>
             <TouchableOpacity
@@ -166,7 +166,7 @@ export default function DashboardScreen() {
         {/* Action Button & Quick Add Row */}
         <View style={styles.addBar}>
           <GlassButton
-            title="+ Add New Reminder"
+            title=" Add New Reminder"
             onPress={() => openCreate('task')}
             variant="primary"
             icon="add-circle-outline"
@@ -204,7 +204,7 @@ export default function DashboardScreen() {
           <GlassCard style={styles.emptyCard}>
             <Ionicons name="checkmark-done-circle-outline" size={44} color="#64748B" />
             <Text style={styles.emptyTitle}>No reminders in {activeTab.toUpperCase()}</Text>
-            <Text style={styles.emptySub}>Tap "+ Add New Reminder" to set a task, bill, or appointment.</Text>
+            <Text style={styles.emptySub}>Tap " Add New Reminder" to set a task, bill, or appointment.</Text>
           </GlassCard>
         ) : (
           currentList.map((rem) => {

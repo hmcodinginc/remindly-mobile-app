@@ -161,7 +161,7 @@ export default function TasksScreen() {
             </Text>
           </View>
           <GlassButton
-            title="+ Add Task"
+            title="Add Task"
             onPress={openCreateModal}
             variant="primary"
             icon="add"

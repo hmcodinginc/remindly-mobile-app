@@ -14,6 +14,7 @@ import { useAuthStore } from '../../store/useAuthStore';
 import GlassCard from '../../components/GlassCard';
 import GlassInput from '../../components/GlassInput';
 import GlassButton from '../../components/GlassButton';
+import { openRealEmailApp } from '../../utils/emailDispatcher';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -86,6 +87,16 @@ export default function ForgotPasswordScreen() {
             variant="primary"
             style={styles.resetBtn}
           />
+
+          {message && (
+            <GlassButton
+              title="Open Gmail / Mail App"
+              onPress={() => openRealEmailApp(email, 'Remindly Password Reset Link', `Hello,\n\nReset link for ${email}:\nhttps://remindly.app/reset-password?email=${encodeURIComponent(email)}`)}
+              variant="secondary"
+              icon="mail-outline"
+              style={{ marginTop: 10 }}
+            />
+          )}
 
           <GlassButton
             title="Back to Sign In"
