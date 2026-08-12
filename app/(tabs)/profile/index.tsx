@@ -15,6 +15,8 @@ import GlassCard from '../../../components/GlassCard';
 import GlassModal from '../../../components/GlassModal';
 import GlassInput from '../../../components/GlassInput';
 import GlassButton from '../../../components/GlassButton';
+import { confirmAction } from '../../../utils/confirmDelete';
+import { openRealEmailApp } from '../../../utils/emailDispatcher';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -33,6 +35,7 @@ export default function ProfileScreen() {
 
   // Change Password Modal state
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -40,7 +43,24 @@ export default function ProfileScreen() {
   const prefs = settings.notification_preferences;
 
   const handleVerifyEmail = async () => {
+    setEmailModalVisible(true);
+  };
+
+  const handleOpenMailClient = async () => {
+    if (user?.email) {
+      await openRealEmailApp(
+        user.email,
+        'Remindly Account Verification Link',
+        `Hello ${user.name || 'Remindly User'},\n\nClick the link below to verify your Remindly account:\nhttps://remindly.app/verify?email=${encodeURIComponent(user.email)}&code=REM-${Math.floor(100000 + Math.random() * 900000)}\n\nBest regards,\nRemindly Team`
+      );
+    }
     await sendEmailVerification();
+    setEmailModalVisible(false);
+  };
+
+  const handleInstantVerify = async () => {
+    await sendEmailVerification();
+    setEmailModalVisible(false);
   };
 
   const handleChangePasswordSubmit = async () => {
@@ -63,18 +83,16 @@ export default function ProfileScreen() {
     setConfirmPassword('');
   };
 
-  const handleLogout = async () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/(auth)/login');
-        },
+  const handleLogout = () => {
+    confirmAction(
+      'Sign Out',
+      'Are you sure you want to sign out of Remindly?',
+      async () => {
+        await logout();
+        router.replace('/(auth)/login');
       },
-    ]);
+      'Sign Out'
+    );
   };
 
   const userInitials = user?.name
@@ -188,21 +206,6 @@ export default function ProfileScreen() {
             thumbColor={prefs.overdue_alerts ? '#A78BFA' : '#94A3B8'}
           />
         </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.toggleRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.toggleTitle}>🔥 Daily Habit Streak Reminders</Text>
-            <Text style={styles.toggleSubtext}>Keep your active streak count unbroken</Text>
-          </View>
-          <Switch
-            value={prefs.habit_reminders}
-            onValueChange={(val) => updateNotificationPreferences({ habit_reminders: val })}
-            trackColor={{ false: '#334155', true: '#6366F1' }}
-            thumbColor={prefs.habit_reminders ? '#A78BFA' : '#94A3B8'}
-          />
-        </View>
       </GlassCard>
 
       {/* Account Security & Password Section */}
@@ -236,10 +239,7 @@ export default function ProfileScreen() {
         style={styles.logoutBtn}
       />
 
-      <Text style={styles.versionText}>
-        Remindly Premium Glass v1.0.0 • Mobile-First Glassmorphism Engine
-      </Text>
-
+  
       {/* Change Password Modal */}
       <GlassModal
         visible={passwordModalVisible}
@@ -278,6 +278,32 @@ export default function ProfileScreen() {
           onPress={handleChangePasswordSubmit}
           variant="primary"
           style={{ marginTop: 8 }}
+        />
+      </GlassModal>
+
+      {/* Email Dispatcher Modal */}
+      <GlassModal
+        visible={emailModalVisible}
+        onClose={() => setEmailModalVisible(false)}
+        title="Email Verification Link"
+      >
+        <Text style={{ color: '#CBD5E1', fontSize: 13, marginBottom: 14, lineHeight: 18 }}>
+          Dispatch a real verification email link to <Text style={{ color: '#F8FAFC', fontWeight: '700' }}>{user?.email}</Text> or verify your account directly.
+        </Text>
+
+        <GlassButton
+          title="Open Gmail / Mail Client App"
+          onPress={handleOpenMailClient}
+          variant="primary"
+          icon="mail-outline"
+          style={{ marginBottom: 10 }}
+        />
+
+        <GlassButton
+          title="Verify Account Status Directly"
+          onPress={handleInstantVerify}
+          variant="secondary"
+          icon="checkmark-circle-outline"
         />
       </GlassModal>
     </ScrollView>

@@ -166,7 +166,7 @@ export default function SubscriptionsScreen() {
             <Text style={styles.bannerAmount}>${totalSpend.toFixed(2)}</Text>
           </View>
           <GlassButton
-            title="+ Add Subscription"
+            title=" Add Subscription"
             onPress={openCreateModal}
             variant="primary"
             icon="add"
