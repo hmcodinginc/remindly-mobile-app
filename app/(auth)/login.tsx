@@ -46,31 +46,31 @@ export default function LoginScreen() {
         {/* Header Branding */}
         <View style={styles.header}>
           <View style={styles.logoWrapper}>
-            <RemindlyLogo size={88} />
+            <RemindlyLogo size={72} showBackground={false} />
           </View>
           <Text style={styles.title}>Remindly</Text>
           <Text style={styles.subtitle}>
-            Subscriptions, Tasks & Habit Tracker
+            Subscriptions & Task Manager
           </Text>
         </View>
 
         {/* Glass Card Form */}
-        <GlassCard glow style={styles.card}>
+        <GlassCard style={styles.card}>
           <Text style={styles.cardTitle}>Welcome Back</Text>
           <Text style={styles.cardSubtitle}>
-            Sign in to sync your subscriptions, tasks & habits
+            Sign in to manage your reminders and subscriptions
           </Text>
 
           {error && (
             <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={18} color="#F87171" />
+              <Ionicons name="alert-circle" size={18} color="#EF4444" />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
 
           {message && (
             <View style={styles.messageBox}>
-              <Ionicons name="checkmark-circle" size={18} color="#34D399" />
+              <Ionicons name="checkmark-circle" size={18} color="#16A34A" />
               <Text style={styles.messageText}>{message}</Text>
             </View>
           )}
@@ -140,108 +140,104 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070A14',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     padding: 24,
-    maxWidth: 480,
+    maxWidth: 440,
     width: '100%',
     alignSelf: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 24,
   },
   logoWrapper: {
-    marginBottom: 14,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
+    marginBottom: 10,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#F8FAFC',
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#171717',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 4,
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
   },
   card: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   cardTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#F8FAFC',
+    color: '#171717',
   },
   cardSubtitle: {
     fontSize: 13,
-    color: '#94A3B8',
-    marginBottom: 20,
-    marginTop: 4,
+    color: '#6B7280',
+    marginBottom: 18,
+    marginTop: 2,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderColor: '#FCA5A5',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 14,
     gap: 8,
   },
   errorText: {
-    color: '#F87171',
+    color: '#EF4444',
     fontSize: 13,
     flex: 1,
   },
   messageBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    backgroundColor: '#DCFCE7',
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderColor: '#86EFAC',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 14,
     gap: 8,
   },
   messageText: {
-    color: '#34D399',
+    color: '#15803D',
     fontSize: 13,
     flex: 1,
   },
   forgotBtn: {
     alignSelf: 'flex-end',
-    marginBottom: 20,
+    marginBottom: 18,
   },
   forgotText: {
     fontSize: 13,
-    color: '#A78BFA',
+    color: '#5B5CE2',
     fontWeight: '600',
   },
   loginBtn: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 12,
+    marginTop: 8,
   },
   footerText: {
-    fontSize: 14,
-    color: '#94A3B8',
+    fontSize: 13,
+    color: '#6B7280',
   },
   signUpText: {
-    fontSize: 14,
-    color: '#818CF8',
+    fontSize: 13,
+    color: '#5B5CE2',
     fontWeight: '700',
   },
 });

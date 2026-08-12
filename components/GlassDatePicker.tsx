@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TouchableWithoutFeedback, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface GlassDatePickerProps {
@@ -18,7 +18,6 @@ export default function GlassDatePicker({
   const todayStr = new Date().toISOString().split('T')[0];
   const selectedDate = value || todayStr;
 
-  // Generate date quick choices
   const getOffsetDateStr = (days: number) => {
     const d = new Date();
     d.setDate(d.getDate() + days);
@@ -34,7 +33,6 @@ export default function GlassDatePicker({
     { label: 'Next Month (30d)', date: getOffsetDateStr(30) },
   ];
 
-  // Calendar month dates generator
   const currYear = parseInt(selectedDate.split('-')[0]) || new Date().getFullYear();
   const currMonth = parseInt(selectedDate.split('-')[1]) || new Date().getMonth() + 1;
 
@@ -53,10 +51,10 @@ export default function GlassDatePicker({
         style={styles.dateBox}
       >
         <View style={styles.leftRow}>
-          <Ionicons name="calendar-outline" size={18} color="#818CF8" style={styles.leftIcon} />
+          <Ionicons name="calendar-outline" size={18} color="#5B5CE2" style={styles.leftIcon} />
           <Text style={styles.valueText}>{selectedDate}</Text>
         </View>
-        <Ionicons name="chevron-down" size={18} color="#94A3B8" />
+        <Ionicons name="chevron-down" size={18} color="#6B7280" />
       </TouchableOpacity>
 
       {/* Date Picker Modal */}
@@ -71,9 +69,9 @@ export default function GlassDatePicker({
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalCard}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>📅 Select Calendar Date</Text>
+                  <Text style={styles.modalTitle}>Select Date</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                    <Ionicons name="close" size={20} color="#94A3B8" />
+                    <Ionicons name="close" size={20} color="#6B7280" />
                   </TouchableOpacity>
                 </View>
 
@@ -95,7 +93,6 @@ export default function GlassDatePicker({
                   })}
                 </View>
 
-                {/* Calendar Days Simulation Grid */}
                 <Text style={styles.sectionHeading}>Month View ({currYear}-{String(currMonth).padStart(2, '0')})</Text>
                 <View style={styles.calendarGrid}>
                   {Array.from({ length: 28 }, (_, i) => {
@@ -127,26 +124,25 @@ export default function GlassDatePicker({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 14,
     width: '100%',
   },
   label: {
-    color: '#CBD5E1',
+    color: '#374151',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 6,
-    letterSpacing: 0.2,
   },
   dateBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
+    backgroundColor: '#F7F8FA',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.35)',
-    paddingHorizontal: 14,
-    height: 48,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    height: 46,
   },
   leftRow: {
     flexDirection: 'row',
@@ -156,13 +152,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   valueText: {
-    color: '#F8FAFC',
+    color: '#171717',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(5, 8, 16, 0.82)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -170,12 +166,12 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 440,
-    backgroundColor: '#0E1424',
-    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.4)',
+    borderColor: '#E5E7EB',
     padding: 18,
-    elevation: 12,
+    elevation: 8,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -183,13 +179,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: '#F3F4F6',
     marginBottom: 14,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#F8FAFC',
+    color: '#171717',
   },
   closeBtn: {
     padding: 4,
@@ -197,7 +193,7 @@ const styles = StyleSheet.create({
   sectionHeading: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#818CF8',
+    color: '#5B5CE2',
     textTransform: 'uppercase',
     marginBottom: 8,
     marginTop: 4,
@@ -211,19 +207,19 @@ const styles = StyleSheet.create({
   quickChip: {
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
+    borderColor: '#E5E7EB',
   },
   quickChipActive: {
-    backgroundColor: '#6366F1',
-    borderColor: '#8B5CF6',
+    backgroundColor: '#5B5CE2',
+    borderColor: '#5B5CE2',
   },
   quickText: {
     fontSize: 11,
-    color: '#CBD5E1',
-    fontWeight: '600',
+    color: '#374151',
+    fontWeight: '500',
   },
   quickTextActive: {
     color: '#FFFFFF',
@@ -238,24 +234,24 @@ const styles = StyleSheet.create({
   dayCell: {
     width: 44,
     height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(15, 23, 42, 0.8)',
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
   selectedDayCell: {
-    backgroundColor: '#8B5CF6',
-    borderColor: '#A78BFA',
+    backgroundColor: '#5B5CE2',
+    borderColor: '#5B5CE2',
   },
   dayCellText: {
     fontSize: 13,
-    color: '#CBD5E1',
-    fontWeight: '600',
+    color: '#374151',
+    fontWeight: '500',
   },
   selectedDayCellText: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontWeight: '700',
   },
 });

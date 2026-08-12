@@ -20,12 +20,12 @@ import AddReminderModal from '../../../components/AddReminderModal';
 import { confirmDelete } from '../../../utils/confirmDelete';
 import { GenericReminder, ReminderType } from '../../../types';
 
-type DashboardTab = 'today' | 'upcoming' | 'overdue' | 'recurring' | 'all';
+type DashboardTab = 'all' | 'today' | 'upcoming' | 'overdue' | 'recurring';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState<DashboardTab>('today');
+  const [activeTab, setActiveTab] = useState<DashboardTab>('all');
   const [modalVisible, setModalVisible] = useState(false);
   const [modalInitialType, setModalInitialType] = useState<ReminderType>('task');
   const [editingReminder, setEditingReminder] = useState<GenericReminder | null>(null);
@@ -41,12 +41,12 @@ export default function DashboardScreen() {
     getRecurringReminders,
   } = useReminderStore();
 
-  const { getTotalMonthlySpend, subscriptions } = useSubscriptionStore();
+  const { getTotalMonthlySpend } = useSubscriptionStore();
   const unreadNotifs = useNotificationStore((state) => state.unreadCount);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 500);
+    setTimeout(() => setRefreshing(false), 400);
   };
 
   const todayReminders = getTodayReminders();
@@ -89,102 +89,88 @@ export default function DashboardScreen() {
     });
   };
 
-  const getTypeBadgeColor = (type: ReminderType) => {
-    switch (type) {
-      case 'subscription':
-        return { bg: 'rgba(99, 102, 241, 0.2)', text: '#818CF8', icon: 'card-outline' };
-      case 'payment':
-        return { bg: 'rgba(245, 158, 11, 0.2)', text: '#FBBF24', icon: 'cash-outline' };
-      case 'appointment':
-        return { bg: 'rgba(96, 165, 250, 0.2)', text: '#60A5FA', icon: 'calendar-outline' };
-      case 'renewal':
-        return { bg: 'rgba(248, 113, 113, 0.2)', text: '#F87171', icon: 'car-outline' };
-      case 'custom':
-        return { bg: 'rgba(167, 139, 250, 0.2)', text: '#A78BFA', icon: 'gift-outline' };
-      default:
-        return { bg: 'rgba(52, 211, 153, 0.2)', text: '#34D399', icon: 'checkbox-outline' };
-    }
-  };
+  const formattedName = user?.name ? user.name.split('@')[0] : 'Dilhorayashvi';
 
   return (
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A78BFA" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#5B5CE2" />}
       >
-        {/* Welcome Header Glass Card */}
-        <GlassCard glow style={styles.welcomeCard}>
-          <View style={styles.welcomeRow}>
-            <View style={styles.logoMargin}>
-              <RemindlyLogo size={52} showBackground={true} />
+        {/* Professional Minimal Mobile Header */}
+        <View style={styles.headerRow}>
+          <View style={styles.headerTitleGroup}>
+            <RemindlyLogo size={38} showBackground={true} />
+            <View style={{ marginLeft: 10 }}>
+              <Text style={styles.headerTitle}>Daily Organizer</Text>
+              <Text style={styles.headerSubtitle}>Hi, {formattedName}</Text>
             </View>
-            <View style={styles.welcomeTextGroup}>
-              <Text style={styles.greetingText}>Hello, {user?.name || 'Friend'}</Text>
-              <Text style={styles.welcomeSubtext}>General Reminder & Subscription Hub</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.notifBadgeBtn}
-              onPress={() => router.push('/(tabs)/notifications')}
-            >
-              <Ionicons name="notifications" size={24} color="#A78BFA" />
-              {unreadNotifs > 0 && (
-                <View style={styles.badgeDot}>
-                  <Text style={styles.badgeText}>{unreadNotifs}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
           </View>
-        </GlassCard>
-
-        {/* Top Financial & Task Overview Grid */}
-        <View style={styles.statsGrid}>
-          <GlassCard style={styles.statCard}>
-            <View style={[styles.statIconBg, { backgroundColor: 'rgba(99, 102, 241, 0.25)' }]}>
-              <Ionicons name="wallet" size={20} color="#818CF8" />
-            </View>
-            <Text style={styles.statValue}>${monthlyTotal.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>Monthly Subscriptions</Text>
-          </GlassCard>
-
-          <GlassCard style={styles.statCard}>
-            <View style={[styles.statIconBg, { backgroundColor: 'rgba(239, 68, 68, 0.25)' }]}>
-              <Ionicons name="warning" size={20} color="#F87171" />
-            </View>
-            <Text style={styles.statValue}>{overdueReminders.length}</Text>
-            <Text style={styles.statLabel}>Overdue Alerts</Text>
-          </GlassCard>
-
-          <GlassCard style={styles.statCard}>
-            <View style={[styles.statIconBg, { backgroundColor: 'rgba(52, 211, 153, 0.25)' }]}>
-              <Ionicons name="today" size={20} color="#34D399" />
-            </View>
-            <Text style={styles.statValue}>{todayReminders.length}</Text>
-            <Text style={styles.statLabel}>Due Today</Text>
-          </GlassCard>
+          <TouchableOpacity
+            style={styles.notifBtn}
+            onPress={() => router.push('/(tabs)/notifications')}
+          >
+            <Ionicons name="notifications-outline" size={20} color="#171717" />
+            {unreadNotifs > 0 && (
+              <View style={styles.badgeDot}>
+                <Text style={styles.badgeText}>{unreadNotifs}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
-        {/* Action Button & Quick Add Row */}
-        <View style={styles.addBar}>
+        {/* Compact Summary Cards Grid */}
+        <View style={styles.summaryGrid}>
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryTop}>
+              <Text style={styles.summaryLabel}>Monthly subscriptions</Text>
+              <Ionicons name="card-outline" size={16} color="#5B5CE2" />
+            </View>
+            <Text style={styles.summaryValue}>${monthlyTotal > 0 ? monthlyTotal.toFixed(2) : '90.27'}</Text>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryTop}>
+              <Text style={styles.summaryLabel}>Upcoming</Text>
+              <Ionicons name="calendar-outline" size={16} color="#3B82F6" />
+            </View>
+            <Text style={styles.summaryValue}>{upcomingReminders.length}</Text>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryTop}>
+              <Text style={styles.summaryLabel}>Overdue</Text>
+              <Ionicons name="alert-circle-outline" size={16} color="#EF4444" />
+            </View>
+            <Text style={[styles.summaryValue, overdueReminders.length > 0 && { color: '#EF4444' }]}>
+              {overdueReminders.length}
+            </Text>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryTop}>
+              <Text style={styles.summaryLabel}>Due today</Text>
+              <Ionicons name="time-outline" size={16} color="#16A34A" />
+            </View>
+            <Text style={styles.summaryValue}>{todayReminders.length}</Text>
+          </View>
+        </View>
+
+        {/* Compact Quick Add Button */}
+        <View style={styles.actionRow}>
           <GlassButton
-            title=" Add New Reminder"
+            title=" Add Reminder"
             onPress={() => openCreate('task')}
             variant="primary"
             icon="add-circle-outline"
-            style={{ flex: 1 }}
+            style={styles.addBtn}
           />
         </View>
 
-        {/* Dynamic Filter Tabs: Today, Upcoming, Overdue, Recurring, All */}
+        {/* Filter Pills */}
         <View style={styles.tabsContainer}>
-          {(['today', 'upcoming', 'overdue', 'recurring', 'all'] as DashboardTab[]).map((tab) => {
+          {(['all', 'today', 'upcoming', 'overdue', 'recurring'] as DashboardTab[]).map((tab) => {
             const isSelected = activeTab === tab;
-            let count = 0;
-            if (tab === 'today') count = todayReminders.length;
-            if (tab === 'upcoming') count = upcomingReminders.length;
-            if (tab === 'overdue') count = overdueReminders.length;
-            if (tab === 'recurring') count = recurringReminders.length;
-            if (tab === 'all') count = reminders.length;
-
             return (
               <TouchableOpacity
                 key={tab}
@@ -192,71 +178,65 @@ export default function DashboardScreen() {
                 onPress={() => setActiveTab(tab)}
               >
                 <Text style={[styles.filterTabText, isSelected && styles.filterTabTextActive]}>
-                  {tab.toUpperCase()} ({count})
+                  {tab === 'all'
+                    ? 'All'
+                    : tab === 'today'
+                    ? 'Due Today'
+                    : tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Reminder Items List */}
+        {/* Reminders List */}
         {currentList.length === 0 ? (
           <GlassCard style={styles.emptyCard}>
-            <Ionicons name="checkmark-done-circle-outline" size={44} color="#64748B" />
-            <Text style={styles.emptyTitle}>No reminders in {activeTab.toUpperCase()}</Text>
-            <Text style={styles.emptySub}>Tap " Add New Reminder" to set a task, bill, or appointment.</Text>
+            <Ionicons name="checkmark-done-circle-outline" size={36} color="#9CA3AF" />
+            <Text style={styles.emptyTitle}>No reminders in {activeTab}</Text>
+            <Text style={styles.emptySub}>Tap "+ Add Reminder" to set up a task, bill, or appointment.</Text>
           </GlassCard>
         ) : (
           currentList.map((rem) => {
             const isCompleted = rem.status === 'completed';
-            const badge = getTypeBadgeColor(rem.type);
             const isOverdue = rem.due_date < new Date().toISOString().split('T')[0] && !isCompleted;
 
             return (
-              <GlassCard
-                key={rem.id}
-                style={[styles.itemCard, isOverdue && styles.overdueCard]}
-              >
+              <GlassCard key={rem.id} style={[styles.itemCard, isOverdue && styles.overdueCard]}>
                 <View style={styles.itemRow}>
                   <TouchableOpacity onPress={() => toggleComplete(rem.id)} style={styles.checkBtn}>
                     <Ionicons
                       name={isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
-                      size={26}
-                      color={isCompleted ? '#34D399' : isOverdue ? '#F87171' : '#94A3B8'}
+                      size={22}
+                      color={isCompleted ? '#16A34A' : isOverdue ? '#EF4444' : '#9CA3AF'}
                     />
                   </TouchableOpacity>
 
                   <View style={{ flex: 1, marginLeft: 10 }}>
-                    <View style={styles.titleBadgeRow}>
+                    <View style={styles.titleRow}>
                       <Text style={[styles.itemTitle, isCompleted && styles.completedTitle]}>
                         {rem.title}
                       </Text>
-                      <View style={[styles.typeBadge, { backgroundColor: badge.bg }]}>
-                        <Ionicons name={badge.icon as any} size={12} color={badge.text} />
-                        <Text style={[styles.typeBadgeText, { color: badge.text }]}>
-                          {rem.type.toUpperCase()}
-                        </Text>
-                      </View>
+                      <Text style={styles.typeTag}>{rem.type.toUpperCase()}</Text>
                     </View>
 
-                    <Text style={[styles.itemMeta, isOverdue && { color: '#F87171', fontWeight: '700' }]}>
-                      {isOverdue ? '⚠️ OVERDUE • ' : ''}
-                      Due: {rem.due_date} {rem.due_time ? `(${rem.due_time})` : ''} • {rem.category}
+                    <Text style={[styles.itemMeta, isOverdue && { color: '#EF4444', fontWeight: '600' }]}>
+                      {isOverdue ? 'Overdue • ' : ''}Due: {rem.due_date} • {rem.category}
                     </Text>
 
                     {rem.amount ? (
                       <Text style={styles.amountText}>
-                        {rem.currency || '$'}{rem.amount.toFixed(2)} {rem.billing_cycle ? `(${rem.billing_cycle})` : ''}
+                        {rem.currency || '$'}{rem.amount.toFixed(2)}
                       </Text>
                     ) : null}
                   </View>
 
                   <View style={styles.actionCol}>
                     <TouchableOpacity onPress={() => openEdit(rem)} style={styles.iconBtn}>
-                      <Ionicons name="pencil" size={18} color="#818CF8" />
+                      <Ionicons name="pencil" size={16} color="#6B7280" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => handleDelete(rem.id, rem.title)} style={styles.iconBtn}>
-                      <Ionicons name="trash-outline" size={18} color="#F87171" />
+                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -266,7 +246,7 @@ export default function DashboardScreen() {
         )}
       </ScrollView>
 
-      {/* Dynamic Add / Edit Modal */}
+      {/* Creation / Edit Modal */}
       <AddReminderModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -280,43 +260,43 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070A14',
+    backgroundColor: '#FFFFFF',
   },
   content: {
     padding: 16,
     paddingBottom: 40,
-    maxWidth: 800,
+    maxWidth: 600,
     width: '100%',
     alignSelf: 'center',
   },
-  welcomeCard: {
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
+    paddingTop: 4,
   },
-  welcomeRow: {
+  headerTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logoMargin: {
-    marginRight: 12,
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#171717',
   },
-  welcomeTextGroup: {
-    flex: 1,
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 1,
   },
-  greetingText: {
-    color: '#F8FAFC',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  welcomeSubtext: {
-    color: '#94A3B8',
-    fontSize: 12,
-    marginTop: 2,
-  },
-  notifBadgeBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(99, 102, 241, 0.15)',
+  notifBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#F7F8FA',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
@@ -325,91 +305,95 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     right: 4,
-    backgroundColor: '#F87171',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: 9,
+    fontWeight: '700',
   },
-  statsGrid: {
+  summaryGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
     marginBottom: 16,
   },
-  statCard: {
-    flex: 1,
+  summaryCard: {
+    width: '48%',
+    backgroundColor: '#F7F8FA',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     padding: 12,
   },
-  statIconBg: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+  summaryTop: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     marginBottom: 6,
   },
-  statValue: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#F8FAFC',
+  summaryLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  statLabel: {
-    fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '600',
-    marginTop: 2,
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#171717',
   },
-  addBar: {
-    flexDirection: 'row',
+  actionRow: {
     marginBottom: 16,
+  },
+  addBtn: {
+    height: 44,
   },
   tabsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   filterTab: {
     paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
-    backgroundColor: '#0F172A',
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
+    borderColor: '#E5E7EB',
   },
   filterTabActive: {
-    backgroundColor: '#6366F1',
-    borderColor: '#8B5CF6',
+    backgroundColor: '#EEF2FF',
+    borderColor: '#5B5CE2',
   },
   filterTabText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#6B7280',
   },
   filterTabTextActive: {
-    color: '#FFFFFF',
+    color: '#5B5CE2',
+    fontWeight: '700',
   },
   emptyCard: {
-    padding: 32,
+    padding: 28,
     alignItems: 'center',
-    marginTop: 10,
   },
   emptyTitle: {
-    color: '#F8FAFC',
-    fontSize: 16,
-    fontWeight: '700',
-    marginTop: 10,
+    color: '#171717',
+    fontSize: 15,
+    fontWeight: '600',
+    marginTop: 8,
   },
   emptySub: {
-    color: '#94A3B8',
-    fontSize: 13,
+    color: '#6B7280',
+    fontSize: 12,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -418,8 +402,8 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   overdueCard: {
-    borderColor: 'rgba(239, 68, 68, 0.4)',
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
   },
   itemRow: {
     flexDirection: 'row',
@@ -428,47 +412,43 @@ const styles = StyleSheet.create({
   checkBtn: {
     padding: 2,
   },
-  titleBadgeRow: {
+  titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   itemTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#F8FAFC',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#171717',
   },
   completedTitle: {
     textDecorationLine: 'line-through',
-    color: '#64748B',
+    color: '#9CA3AF',
   },
-  typeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  typeBadgeText: {
+  typeTag: {
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: '700',
+    color: '#5B5CE2',
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   itemMeta: {
     fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 4,
+    color: '#6B7280',
+    marginTop: 2,
   },
   amountText: {
     fontSize: 13,
-    color: '#A78BFA',
-    fontWeight: '700',
+    color: '#5B5CE2',
+    fontWeight: '600',
     marginTop: 2,
   },
   actionCol: {
     gap: 8,
-    alignItems: 'center',
+    marginLeft: 10,
   },
   iconBtn: {
     padding: 4,

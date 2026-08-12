@@ -5,12 +5,11 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscriptionStore } from '../../../store/useSubscriptionStore';
 import { useNotificationStore } from '../../../store/useNotificationStore';
-import { scheduleOneWeekRenewalAlert, scheduleSubscriptionRenewalAlert } from '../../../services/notifications';
+import { scheduleOneWeekRenewalAlert } from '../../../services/notifications';
 import { Subscription, BillingCycle } from '../../../types';
 import GlassCard from '../../../components/GlassCard';
 import GlassModal from '../../../components/GlassModal';
@@ -21,7 +20,16 @@ import GlassDatePicker from '../../../components/GlassDatePicker';
 import { confirmDelete } from '../../../utils/confirmDelete';
 
 const CATEGORIES = ['All', 'Entertainment', 'Music', 'Developer Tools', 'Cloud Storage', 'Utilities'];
-const CYCLES: BillingCycle[] = ['monthly', 'yearly', 'weekly', 'quarterly'];
+
+const ALERT_TIMING_OPTIONS = [
+  { label: '1 Day Before Renewal', value: '1' },
+  { label: '3 Days Before Renewal', value: '3' },
+  { label: '1 Week (7 Days) Before', value: '7' },
+  { label: '14 Days Before Renewal', value: '14' },
+  { label: '20 Days Before Renewal', value: '20' },
+  { label: '1 Month (30 Days) Before', value: '30' },
+  { label: 'On Renewal Date', value: '0' },
+];
 
 export default function SubscriptionsScreen() {
   const {
@@ -49,7 +57,7 @@ export default function SubscriptionsScreen() {
   const [category, setCategory] = useState('Entertainment');
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [renewalDate, setRenewalDate] = useState('2026-08-25');
-  const [paymentMethod, setPaymentMethod] = useState('Credit Card (**** 4242)');
+  const [alertNoticeDays, setAlertNoticeDays] = useState('7');
 
   const openCreateModal = () => {
     setEditingSub(null);
@@ -59,7 +67,7 @@ export default function SubscriptionsScreen() {
     setCategory('Entertainment');
     setCycle('monthly');
     setRenewalDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
-    setPaymentMethod('Credit Card (**** 4242)');
+    setAlertNoticeDays('7');
     setModalVisible(true);
   };
 
@@ -71,13 +79,14 @@ export default function SubscriptionsScreen() {
     setCategory(sub.category);
     setCycle(sub.billing_cycle);
     setRenewalDate(sub.renewal_date);
-    setPaymentMethod(sub.payment_method);
+    setAlertNoticeDays(sub.reminder_days_before?.toString() || '7');
     setModalVisible(true);
   };
 
   const handleSave = async () => {
     if (!name || !amount) return;
     const parsedAmount = parseFloat(amount) || 0;
+    const noticeDays = parseInt(alertNoticeDays) || 7;
 
     if (editingSub) {
       await updateSubscription(editingSub.id, {
@@ -87,7 +96,7 @@ export default function SubscriptionsScreen() {
         category,
         billing_cycle: cycle,
         renewal_date: renewalDate,
-        payment_method: paymentMethod,
+        reminder_days_before: noticeDays,
       });
     } else {
       await addSubscription({
@@ -99,17 +108,16 @@ export default function SubscriptionsScreen() {
         renewal_date: renewalDate,
         category,
         auto_renew: true,
-        payment_method: paymentMethod,
+        payment_method: `${noticeDays} Days Notice`,
         status: 'active',
-        reminder_days_before: 7,
+        reminder_days_before: noticeDays,
       });
 
-      // Schedule 1-week prior notification
       await scheduleOneWeekRenewalAlert('sub-new', name, renewalDate, parsedAmount);
       addNotification({
         user: 'user-1',
-        title: '📅 1 Week Advance Renewal Scheduled',
-        message: `Set 7-day advance alert for ${name} ($${parsedAmount.toFixed(2)}) due ${renewalDate}.`,
+        title: '📅 Advance Renewal Alert Scheduled',
+        message: `Set ${noticeDays}-day advance alert for ${name} ($${parsedAmount.toFixed(2)}) due ${renewalDate}.`,
         type: 'subscription_renewal',
         is_read: false,
         target_type: 'subscription',
@@ -131,18 +139,18 @@ export default function SubscriptionsScreen() {
   };
 
   const triggerTestAlert = async (sub: Subscription) => {
+    const noticeDays = sub.reminder_days_before || 7;
     await scheduleOneWeekRenewalAlert(sub.id, sub.name, sub.renewal_date, sub.amount);
     addNotification({
       user: 'user-1',
-      title: '📅 1 Week Advance Renewal Alert',
-      message: `${sub.name} ($${sub.amount.toFixed(2)}) is renewing in 7 days on ${sub.renewal_date}.`,
+      title: '📅 Renewal Advance Alert',
+      message: `${sub.name} ($${sub.amount.toFixed(2)}) is renewing in ${noticeDays} days on ${sub.renewal_date}.`,
       type: 'subscription_renewal',
       is_read: false,
       target_type: 'subscription',
       target_id: sub.id,
       deep_link: '/(tabs)/subscriptions',
     });
-    Alert.alert('Alert Triggered', `1-week renewal reminder sent for ${sub.name}!`);
   };
 
   const filtered = subscriptions.filter((sub) => {
@@ -158,15 +166,15 @@ export default function SubscriptionsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Top Spending Summary Banner */}
-      <GlassCard glow style={styles.banner}>
+      {/* Spending Summary Banner */}
+      <GlassCard style={styles.banner}>
         <View style={styles.bannerRow}>
           <View>
-            <Text style={styles.bannerLabel}>Total Monthly Spend</Text>
+            <Text style={styles.bannerLabel}>Total Monthly Subscriptions</Text>
             <Text style={styles.bannerAmount}>${totalSpend.toFixed(2)}</Text>
           </View>
           <GlassButton
-            title=" Add Subscription"
+            title="+ Add Subscription"
             onPress={openCreateModal}
             variant="primary"
             icon="add"
@@ -217,58 +225,61 @@ export default function SubscriptionsScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <GlassCard style={styles.emptyCard}>
-            <Ionicons name="card-outline" size={48} color="#64748B" />
+            <Ionicons name="card-outline" size={40} color="#9CA3AF" />
             <Text style={styles.emptyText}>No subscriptions found</Text>
           </GlassCard>
         }
-        renderItem={({ item }) => (
-          <GlassCard style={styles.subCard}>
-            <View style={styles.cardHeader}>
-              <View style={styles.iconBg}>
-                <Ionicons name="card" size={24} color="#818CF8" />
-              </View>
+        renderItem={({ item }) => {
+          const alertDays = item.reminder_days_before || 7;
+          return (
+            <GlassCard style={styles.subCard}>
+              <View style={styles.cardHeader}>
+                <View style={styles.iconBg}>
+                  <Ionicons name="card" size={22} color="#5B5CE2" />
+                </View>
 
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.subName}>{item.name}</Text>
-                <Text style={styles.subCategory}>
-                  {item.category} • {item.billing_cycle.toUpperCase()}
-                </Text>
-                <Text style={styles.renewalText}>
-                  Renews: {item.renewal_date} ({item.payment_method})
-                </Text>
-              </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.subName}>{item.name}</Text>
+                  <Text style={styles.subCategory}>
+                    {item.category} • {item.billing_cycle.toUpperCase()}
+                  </Text>
+                  <Text style={styles.renewalText}>
+                    Renews: {item.renewal_date} • Alert: {alertDays} days prior
+                  </Text>
+                </View>
 
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.subPrice}>
-                  {item.currency}{item.amount.toFixed(2)}
-                </Text>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={styles.subPrice}>
+                    {item.currency}{item.amount.toFixed(2)}
+                  </Text>
 
-                <View style={styles.actionsRow}>
-                  <TouchableOpacity
-                    style={styles.actionIconBtn}
-                    onPress={() => triggerTestAlert(item)}
-                  >
-                    <Ionicons name="notifications-outline" size={18} color="#FBBF24" />
-                  </TouchableOpacity>
+                  <View style={styles.actionsRow}>
+                    <TouchableOpacity
+                      style={styles.actionIconBtn}
+                      onPress={() => triggerTestAlert(item)}
+                    >
+                      <Ionicons name="notifications-outline" size={18} color="#D97706" />
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.actionIconBtn}
-                    onPress={() => openEditModal(item)}
-                  >
-                    <Ionicons name="pencil" size={18} color="#818CF8" />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionIconBtn}
+                      onPress={() => openEditModal(item)}
+                    >
+                      <Ionicons name="pencil" size={18} color="#5B5CE2" />
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.actionIconBtn}
-                    onPress={() => handleDelete(item.id, item.name)}
-                  >
-                    <Ionicons name="trash-outline" size={18} color="#F87171" />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionIconBtn}
+                      onPress={() => handleDelete(item.id, item.name)}
+                    >
+                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
-          </GlassCard>
-        )}
+            </GlassCard>
+          );
+        }}
       />
 
       {/* Create / Edit Modal */}
@@ -278,19 +289,19 @@ export default function SubscriptionsScreen() {
         title={editingSub ? 'Edit Subscription' : 'New Subscription'}
       >
         <GlassInput
-          label="Subscription Name"
-          placeholder="Netflix, Spotify, GitHub..."
+          label="Subscription Name *"
+          placeholder="Netflix, Spotify, Cloud Storage..."
           value={name}
           onChangeText={setName}
           iconName="card-outline"
         />
 
         <GlassInput
-          label="Amount ($)"
-          placeholder="19.99"
+          label="Amount ($) *"
+          placeholder="14.99"
           value={amount}
           onChangeText={setAmount}
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           iconName="cash-outline"
         />
 
@@ -315,7 +326,7 @@ export default function SubscriptionsScreen() {
             { label: 'Music', value: 'Music', icon: 'musical-notes-outline' },
             { label: 'Developer Tools', value: 'Developer Tools', icon: 'code-slash-outline' },
             { label: 'Cloud Storage', value: 'Cloud Storage', icon: 'cloud-outline' },
-            { label: 'Utilities & Bills', value: 'Utilities', icon: 'flash-outline' },
+            { label: 'Utilities', value: 'Utilities', icon: 'flash-outline' },
           ]}
           onSelect={setCategory}
           iconName="folder-outline"
@@ -328,25 +339,18 @@ export default function SubscriptionsScreen() {
         />
 
         <GlassPicker
-          label="Payment Method"
-          value={paymentMethod}
-          options={[
-            { label: 'Credit Card (**** 4242)', value: 'Credit Card (**** 4242)', icon: 'card-outline' },
-            { label: 'Debit Card', value: 'Debit Card', icon: 'card-outline' },
-            { label: 'Bank Transfer / ACH', value: 'Bank Transfer', icon: 'business-outline' },
-            { label: 'Cash', value: 'Cash', icon: 'cash-outline' },
-            { label: 'UPI / Wallet', value: 'UPI', icon: 'qr-code-outline' },
-            { label: 'Apple Pay / Google Pay', value: 'Apple Pay', icon: 'phone-portrait-outline' },
-          ]}
-          onSelect={setPaymentMethod}
-          iconName="wallet-outline"
+          label="Send Alert Notice"
+          value={alertNoticeDays}
+          options={ALERT_TIMING_OPTIONS}
+          onSelect={setAlertNoticeDays}
+          iconName="notifications-outline"
         />
 
         <GlassButton
-          title={editingSub ? 'Update Subscription' : 'Create & Schedule 1-Wk Alert'}
+          title={editingSub ? 'Update Subscription' : 'Create Subscription'}
           onPress={handleSave}
           variant="primary"
-          style={{ marginTop: 12 }}
+          style={{ marginTop: 10 }}
         />
       </GlassModal>
     </View>
@@ -356,11 +360,13 @@ export default function SubscriptionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070A14',
+    backgroundColor: '#FFFFFF',
   },
   banner: {
     margin: 16,
     marginBottom: 10,
+    backgroundColor: '#F7F8FA',
+    borderColor: '#E5E7EB',
   },
   bannerRow: {
     flexDirection: 'row',
@@ -369,41 +375,43 @@ const styles = StyleSheet.create({
   },
   bannerLabel: {
     fontSize: 12,
-    color: '#94A3B8',
-    fontWeight: '600',
+    color: '#6B7280',
+    fontWeight: '500',
   },
   bannerAmount: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#F8FAFC',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#171717',
     marginTop: 2,
   },
   filterSection: {
     paddingHorizontal: 16,
+    paddingTop: 12,
   },
   categoryContainer: {
     gap: 8,
     paddingBottom: 10,
   },
   categoryPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(18, 25, 42, 0.75)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
+    borderColor: '#E5E7EB',
   },
   categoryPillActive: {
-    backgroundColor: '#6366F1',
-    borderColor: '#8B5CF6',
+    backgroundColor: '#EEF2FF',
+    borderColor: '#5B5CE2',
   },
   categoryText: {
-    fontSize: 13,
-    color: '#94A3B8',
-    fontWeight: '600',
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   categoryTextActive: {
-    color: '#FFFFFF',
+    color: '#5B5CE2',
+    fontWeight: '700',
   },
   listContent: {
     padding: 16,
@@ -414,83 +422,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#94A3B8',
+    marginTop: 8,
+    fontSize: 13,
+    color: '#6B7280',
   },
   subCard: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   subName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#F8FAFC',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#171717',
   },
   subCategory: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#6B7280',
     marginTop: 2,
   },
   renewalText: {
     fontSize: 11,
-    color: '#64748B',
-    marginTop: 4,
+    color: '#5B5CE2',
+    marginTop: 3,
+    fontWeight: '500',
   },
   subPrice: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#818CF8',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#5B5CE2',
   },
   actionsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 8,
+    gap: 8,
+    marginTop: 6,
   },
   actionIconBtn: {
     padding: 4,
-  },
-  modalLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#CBD5E1',
-    marginBottom: 8,
-  },
-  cycleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  cycleBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
-    borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.3)',
-    alignItems: 'center',
-  },
-  cycleBtnActive: {
-    backgroundColor: '#6366F1',
-    borderColor: '#8B5CF6',
-  },
-  cycleText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
-  },
-  cycleTextActive: {
-    color: '#FFFFFF',
   },
 });

@@ -5,12 +5,11 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTaskStore, isTaskOverdue } from '../../../store/useTaskStore';
 import { useNotificationStore } from '../../../store/useNotificationStore';
-import { scheduleOverdueTaskAlert, scheduleTaskReminderAlert } from '../../../services/notifications';
+import { scheduleOverdueTaskAlert } from '../../../services/notifications';
 import { Task, TaskPriority } from '../../../types';
 import GlassCard from '../../../components/GlassCard';
 import GlassModal from '../../../components/GlassModal';
@@ -24,11 +23,9 @@ import { confirmDelete } from '../../../utils/confirmDelete';
 const STATUS_FILTERS: Array<{ label: string; value: 'all' | 'pending' | 'overdue' | 'completed' }> = [
   { label: 'All', value: 'all' },
   { label: 'Pending', value: 'pending' },
-  { label: 'Overdue ⚠️', value: 'overdue' },
+  { label: 'Overdue', value: 'overdue' },
   { label: 'Completed', value: 'completed' },
 ];
-
-const PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 
 export default function TasksScreen() {
   const {
@@ -37,24 +34,24 @@ export default function TasksScreen() {
     selectedStatus,
     setSearchQuery,
     setSelectedStatus,
-    toggleTaskStatus,
+    getOverdueTasksCount,
     addTask,
     updateTask,
     deleteTask,
-    getOverdueTasksCount,
+    toggleTaskStatus,
   } = useTaskStore();
 
   const addNotification = useNotificationStore((state) => state.addNotification);
 
-  // Modal state
+  // Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  // Form fields
+  // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('medium');
-  const [dueDate, setDueDate] = useState('');
+  const [dueDate, setDueDate] = useState('2026-08-20');
 
   const openCreateModal = () => {
     setEditingTask(null);
@@ -65,17 +62,17 @@ export default function TasksScreen() {
     setModalVisible(true);
   };
 
-  const openEditModal = (task: Task) => {
-    setEditingTask(task);
-    setTitle(task.title);
-    setDescription(task.description || '');
-    setPriority(task.priority);
-    setDueDate(task.due_date);
+  const openEditModal = (t: Task) => {
+    setEditingTask(t);
+    setTitle(t.title);
+    setDescription(t.description || '');
+    setPriority(t.priority);
+    setDueDate(t.due_date);
     setModalVisible(true);
   };
 
   const handleSave = async () => {
-    if (!title) return;
+    if (!title.trim()) return;
 
     if (editingTask) {
       await updateTask(editingTask.id, {
@@ -92,12 +89,11 @@ export default function TasksScreen() {
         priority,
         due_date: dueDate,
         status: 'todo',
-        labels: ['Task'],
+        labels: ['General'],
         reminder: true,
+        reminder_time: '09:00 AM',
       });
 
-      // Schedule notification
-      await scheduleTaskReminderAlert('task-new', title, dueDate);
       addNotification({
         user: 'user-1',
         title: '⏰ Task Reminder Scheduled',
@@ -123,146 +119,147 @@ export default function TasksScreen() {
     addNotification({
       user: 'user-1',
       title: '⚠️ Overdue Task Alert',
-      message: `Task "${task.title}" is overdue! Please complete or reschedule.`,
+      message: `Task "${task.title}" is overdue!`,
       type: 'overdue_task',
       is_read: false,
       target_type: 'task',
       target_id: task.id,
       deep_link: '/(tabs)/tasks',
     });
-    Alert.alert('Overdue Alert Sent', `Notification triggered for "${task.title}".`);
   };
 
-  const filteredTasks = tasks.filter((t) => {
-    const matchesSearch =
-      t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()));
+  const overdueCount = getOverdueTasksCount();
 
-    const overdue = isTaskOverdue(t);
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const overdue = isTaskOverdue(task);
+
     let matchesStatus = true;
-    if (selectedStatus === 'pending') matchesStatus = t.status !== 'completed';
+    if (selectedStatus === 'pending') matchesStatus = task.status !== 'completed' && !overdue;
     if (selectedStatus === 'overdue') matchesStatus = overdue;
-    if (selectedStatus === 'completed') matchesStatus = t.status === 'completed';
+    if (selectedStatus === 'completed') matchesStatus = task.status === 'completed';
 
     return matchesSearch && matchesStatus;
   });
 
-  const overdueCount = getOverdueTasksCount();
-
   return (
     <View style={styles.container}>
-      {/* Top Banner */}
-      <GlassCard glow style={styles.topBanner}>
-        <View style={styles.bannerRow}>
-          <View>
-            <Text style={styles.bannerTitle}>Task Manager</Text>
-            <Text style={styles.bannerSubtitle}>
-              {tasks.length} total • {overdueCount > 0 ? `${overdueCount} overdue ⚠️` : '0 overdue ✨'}
+      {/* Overdue Warning Banner */}
+      {overdueCount > 0 && (
+        <GlassCard style={styles.overdueBanner}>
+          <View style={styles.bannerRow}>
+            <Ionicons name="warning-outline" size={20} color="#DC2626" />
+            <Text style={styles.overdueText}>
+              <Text style={{ fontWeight: '700' }}>{overdueCount} task(s)</Text> overdue!
             </Text>
           </View>
-          <GlassButton
-            title="Add Task"
-            onPress={openCreateModal}
-            variant="primary"
-            icon="add"
+        </GlassCard>
+      )}
+
+      {/* Header Bar */}
+      <View style={styles.headerBar}>
+        <View style={{ flex: 1 }}>
+          <GlassInput
+            placeholder="Search reminders & tasks..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            iconName="search-outline"
+            rightIcon={searchQuery ? 'close-circle' : undefined}
+            onRightIconPress={() => setSearchQuery('')}
           />
         </View>
-      </GlassCard>
-
-      {/* Search & Filter Tabs */}
-      <View style={styles.filterSection}>
-        <GlassInput
-          placeholder="Search tasks..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          iconName="search-outline"
-          rightIcon={searchQuery ? 'close-circle' : undefined}
-          onRightIconPress={() => setSearchQuery('')}
-        />
-
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={STATUS_FILTERS}
-          keyExtractor={(item) => item.value}
-          contentContainerStyle={styles.filterContainer}
-          renderItem={({ item }) => {
-            const isSelected = selectedStatus === item.value;
-            return (
-              <TouchableOpacity
-                style={[styles.filterPill, isSelected && styles.filterPillActive]}
-                onPress={() => setSelectedStatus(item.value as any)}
-              >
-                <Text style={[styles.filterText, isSelected && styles.filterTextActive]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          }}
+        <GlassButton
+          title="+ Task"
+          onPress={openCreateModal}
+          variant="primary"
+          style={{ marginLeft: 10, height: 46 }}
         />
       </View>
 
-      {/* Tasks List */}
+      {/* Status Filter Chips */}
+      <View style={styles.filterRow}>
+        {STATUS_FILTERS.map((f) => {
+          const isSelected = selectedStatus === f.value;
+          return (
+            <TouchableOpacity
+              key={f.value}
+              style={[styles.filterChip, isSelected && styles.filterChipActive]}
+              onPress={() => setSelectedStatus(f.value)}
+            >
+              <Text style={[styles.filterChipText, isSelected && styles.filterChipTextActive]}>
+                {f.label} {f.value === 'overdue' && overdueCount > 0 ? `(${overdueCount})` : ''}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Task List */}
       <FlatList
         data={filteredTasks}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <GlassCard style={styles.emptyCard}>
-            <Ionicons name="checkbox-outline" size={48} color="#64748B" />
-            <Text style={styles.emptyText}>No tasks found in this view</Text>
+            <Ionicons name="checkbox-outline" size={40} color="#9CA3AF" />
+            <Text style={styles.emptyText}>No tasks found</Text>
           </GlassCard>
         }
         renderItem={({ item }) => {
-          const isDone = item.status === 'completed';
           const overdue = isTaskOverdue(item);
-          const pStyle = PriorityColors[item.priority] || PriorityColors.medium;
+          const pStyle = PriorityColors[item.priority];
 
           return (
-            <GlassCard style={[styles.taskCard, overdue && styles.overdueTaskCard]}>
-              <View style={styles.taskRow}>
+            <GlassCard style={[styles.taskCard, overdue && styles.taskCardOverdue]}>
+              <View style={styles.cardRow}>
                 <TouchableOpacity onPress={() => toggleTaskStatus(item.id)} style={styles.checkBtn}>
                   <Ionicons
-                    name={isDone ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={26}
-                    color={isDone ? '#34D399' : overdue ? '#F87171' : '#94A3B8'}
+                    name={item.status === 'completed' ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={22}
+                    color={item.status === 'completed' ? '#16A34A' : overdue ? '#DC2626' : '#9CA3AF'}
                   />
                 </TouchableOpacity>
 
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={[styles.taskTitle, isDone && styles.completedTitle]}>
+                  <Text style={[styles.taskTitle, item.status === 'completed' && styles.completedTitle]}>
                     {item.title}
                   </Text>
+
                   {item.description ? (
                     <Text style={styles.taskDesc} numberOfLines={2}>
                       {item.description}
                     </Text>
                   ) : null}
 
-                  <View style={styles.badgeRow}>
+                  <View style={styles.metaRow}>
+                    <Text style={[styles.dateText, overdue && { color: '#DC2626', fontWeight: '700' }]}>
+                      {overdue ? '⚠️ Overdue • ' : ''}Due: {item.due_date}
+                    </Text>
+
                     <View style={[styles.priorityBadge, { backgroundColor: pStyle.bg, borderColor: pStyle.border }]}>
                       <Text style={[styles.priorityText, { color: pStyle.text }]}>
                         {item.priority.toUpperCase()}
                       </Text>
                     </View>
-
-                    <Text style={[styles.dueDateText, overdue && { color: '#F87171', fontWeight: '700' }]}>
-                      {overdue ? '⚠️ OVERDUE • ' : '📅 '}Due: {item.due_date}
-                    </Text>
                   </View>
                 </View>
 
-                <View style={styles.actionCol}>
-                  <TouchableOpacity style={styles.iconBtn} onPress={() => triggerOverdueAlert(item)}>
-                    <Ionicons name="notifications-outline" size={18} color="#FBBF24" />
-                  </TouchableOpacity>
+                <View style={styles.actionsCol}>
+                  {overdue && (
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => triggerOverdueAlert(item)}>
+                      <Ionicons name="notifications-outline" size={18} color="#D97706" />
+                    </TouchableOpacity>
+                  )}
 
                   <TouchableOpacity style={styles.iconBtn} onPress={() => openEditModal(item)}>
-                    <Ionicons name="pencil" size={18} color="#818CF8" />
+                    <Ionicons name="pencil" size={18} color="#5B5CE2" />
                   </TouchableOpacity>
 
                   <TouchableOpacity style={styles.iconBtn} onPress={() => handleDelete(item.id, item.title)}>
-                    <Ionicons name="trash-outline" size={18} color="#F87171" />
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -278,7 +275,7 @@ export default function TasksScreen() {
         title={editingTask ? 'Edit Task' : 'New Task'}
       >
         <GlassInput
-          label="Task Title"
+          label="Task Title *"
           placeholder="Task title..."
           value={title}
           onChangeText={setTitle}
@@ -292,7 +289,6 @@ export default function TasksScreen() {
           onChangeText={setDescription}
           multiline
           numberOfLines={3}
-          style={{ height: 80 }}
           iconName="document-text-outline"
         />
 
@@ -300,10 +296,10 @@ export default function TasksScreen() {
           label="Priority Level"
           value={priority}
           options={[
-            { label: 'Urgent Priority', value: 'urgent', icon: 'alert-circle-outline', color: '#F87171' },
-            { label: 'High Priority', value: 'high', icon: 'warning-outline', color: '#FBBF24' },
-            { label: 'Medium Priority', value: 'medium', icon: 'remove-circle-outline', color: '#818CF8' },
-            { label: 'Low Priority', value: 'low', icon: 'arrow-down-circle-outline', color: '#34D399' },
+            { label: 'Urgent Priority', value: 'urgent', icon: 'alert-circle-outline', color: '#DC2626' },
+            { label: 'High Priority', value: 'high', icon: 'warning-outline', color: '#D97706' },
+            { label: 'Medium Priority', value: 'medium', icon: 'remove-circle-outline', color: '#4F46E5' },
+            { label: 'Low Priority', value: 'low', icon: 'arrow-down-circle-outline', color: '#16A34A' },
           ]}
           onSelect={(v) => setPriority(v as TaskPriority)}
           iconName="alert-circle-outline"
@@ -316,10 +312,10 @@ export default function TasksScreen() {
         />
 
         <GlassButton
-          title={editingTask ? 'Update Task' : 'Create Task & Schedule Reminder'}
+          title={editingTask ? 'Update Task' : 'Create Task'}
           onPress={handleSave}
           variant="primary"
-          style={{ marginTop: 12 }}
+          style={{ marginTop: 10 }}
         />
       </GlassModal>
     </View>
@@ -329,53 +325,55 @@ export default function TasksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070A14',
+    backgroundColor: '#FFFFFF',
   },
-  topBanner: {
+  overdueBanner: {
     margin: 16,
-    marginBottom: 10,
+    marginBottom: 8,
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
   },
   bannerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  bannerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#F8FAFC',
-  },
-  bannerSubtitle: {
-    fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 2,
-  },
-  filterSection: {
-    paddingHorizontal: 16,
-  },
-  filterContainer: {
     gap: 8,
+  },
+  overdueText: {
+    color: '#DC2626',
+    fontSize: 13,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    alignItems: 'center',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
     paddingBottom: 10,
   },
-  filterPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(18, 25, 42, 0.75)',
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
+    borderColor: '#E5E7EB',
   },
-  filterPillActive: {
-    backgroundColor: '#6366F1',
-    borderColor: '#8B5CF6',
+  filterChipActive: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#5B5CE2',
   },
-  filterText: {
-    fontSize: 13,
-    color: '#94A3B8',
-    fontWeight: '600',
+  filterChipText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  filterTextActive: {
-    color: '#FFFFFF',
+  filterChipTextActive: {
+    color: '#5B5CE2',
+    fontWeight: '700',
   },
   listContent: {
     padding: 16,
@@ -386,85 +384,63 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#94A3B8',
+    marginTop: 8,
+    fontSize: 13,
+    color: '#6B7280',
   },
   taskCard: {
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  overdueTaskCard: {
-    borderColor: 'rgba(239, 68, 68, 0.4)',
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+  taskCardOverdue: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
   },
-  taskRow: {
+  cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkBtn: {
-    padding: 4,
+    padding: 2,
   },
   taskTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#F8FAFC',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#171717',
   },
   completedTitle: {
     textDecorationLine: 'line-through',
-    color: '#64748B',
+    color: '#9CA3AF',
   },
   taskDesc: {
     fontSize: 12,
-    color: '#94A3B8',
+    color: '#6B7280',
     marginTop: 2,
   },
-  badgeRow: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 6,
+    marginTop: 4,
+  },
+  dateText: {
+    fontSize: 11,
+    color: '#6B7280',
   },
   priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
     borderWidth: 1,
   },
   priorityText: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: 9,
+    fontWeight: '700',
   },
-  dueDateText: {
-    fontSize: 11,
-    color: '#94A3B8',
-  },
-  actionCol: {
+  actionsCol: {
     gap: 6,
-    alignItems: 'center',
+    marginLeft: 8,
   },
   iconBtn: {
     padding: 4,
-  },
-  modalLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#CBD5E1',
-    marginBottom: 8,
-  },
-  priorityRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  priorityBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  priorityBtnText: {
-    fontSize: 11,
-    fontWeight: '800',
   },
 });
