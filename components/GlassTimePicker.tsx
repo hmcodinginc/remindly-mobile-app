@@ -38,10 +38,10 @@ export default function GlassTimePicker({
         style={styles.timeBox}
       >
         <View style={styles.leftRow}>
-          <Ionicons name="time-outline" size={18} color="#818CF8" style={styles.leftIcon} />
+          <Ionicons name="time-outline" size={18} color="#5B5CE2" style={styles.leftIcon} />
           <Text style={styles.valueText}>{value || '09:00 AM'}</Text>
         </View>
-        <Ionicons name="chevron-down" size={18} color="#94A3B8" />
+        <Ionicons name="chevron-down" size={18} color="#6B7280" />
       </TouchableOpacity>
 
       {/* Time Picker Modal */}
@@ -56,9 +56,9 @@ export default function GlassTimePicker({
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
               <View style={styles.modalCard}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>⏰ Select Notification Time</Text>
+                  <Text style={styles.modalTitle}>Select Time</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                    <Ionicons name="close" size={20} color="#94A3B8" />
+                    <Ionicons name="close" size={20} color="#6B7280" />
                   </TouchableOpacity>
                 </View>
 
@@ -74,14 +74,14 @@ export default function GlassTimePicker({
                         <Ionicons
                           name={t.icon as any}
                           size={20}
-                          color={isSelected ? '#A78BFA' : '#818CF8'}
+                          color={isSelected ? '#5B5CE2' : '#6B7280'}
                           style={{ marginRight: 12 }}
                         />
                         <Text style={[styles.timeLabel, isSelected && styles.selectedTimeLabel]}>
                           {t.label}
                         </Text>
                       </View>
-                      {isSelected && <Ionicons name="checkmark-circle" size={20} color="#A78BFA" />}
+                      {isSelected && <Ionicons name="checkmark-circle" size={20} color="#5B5CE2" />}
                     </TouchableOpacity>
                   );
                 })}
@@ -96,26 +96,25 @@ export default function GlassTimePicker({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 14,
     width: '100%',
   },
   label: {
-    color: '#CBD5E1',
+    color: '#374151',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 6,
-    letterSpacing: 0.2,
   },
   timeBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
+    backgroundColor: '#F7F8FA',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.35)',
-    paddingHorizontal: 14,
-    height: 48,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    height: 46,
   },
   leftRow: {
     flexDirection: 'row',
@@ -125,13 +124,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   valueText: {
-    color: '#F8FAFC',
+    color: '#171717',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(5, 8, 16, 0.82)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -139,12 +138,12 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 420,
-    backgroundColor: '#0E1424',
-    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.4)',
+    borderColor: '#E5E7EB',
     padding: 18,
-    elevation: 12,
+    elevation: 8,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -152,13 +151,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: '#F3F4F6',
     marginBottom: 12,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#F8FAFC',
+    color: '#171717',
   },
   closeBtn: {
     padding: 4,
@@ -169,14 +168,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 14,
-    borderRadius: 12,
+    borderRadius: 10,
     marginBottom: 6,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   selectedTimeItem: {
-    backgroundColor: 'rgba(99, 102, 241, 0.25)',
-    borderColor: 'rgba(139, 92, 246, 0.5)',
-    borderWidth: 1,
+    backgroundColor: '#EEF2FF',
+    borderColor: '#C7D2FE',
   },
   timeItemLeft: {
     flexDirection: 'row',
@@ -184,11 +184,11 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: 14,
-    color: '#CBD5E1',
+    color: '#374151',
     fontWeight: '500',
   },
   selectedTimeLabel: {
-    color: '#F8FAFC',
+    color: '#5B5CE2',
     fontWeight: '700',
   },
 });

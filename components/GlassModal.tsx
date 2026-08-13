@@ -1,5 +1,15 @@
 import React from 'react';
-import { Modal, View, StyleSheet, TouchableWithoutFeedback, Text, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface GlassModalProps {
@@ -19,23 +29,30 @@ export default function GlassModal({ visible, onClose, title, children }: GlassM
     >
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.backdrop}>
-          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-            <View style={styles.modalCard}>
-              <View style={styles.header}>
-                <Text style={styles.title}>{title}</Text>
-                <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-                  <Ionicons name="close" size={22} color="#94A3B8" />
-                </TouchableOpacity>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.keyboardContainer}
+          >
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalCard}>
+                <View style={styles.header}>
+                  <Text style={styles.title}>{title}</Text>
+                  <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+                    <Ionicons name="close" size={20} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView
+                  style={styles.scrollView}
+                  showsVerticalScrollIndicator={true}
+                  contentContainerStyle={styles.scrollContent}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {children}
+                </ScrollView>
               </View>
-              <ScrollView
-                style={styles.body}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-              >
-                {children}
-              </ScrollView>
-            </View>
-          </TouchableWithoutFeedback>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
         </View>
       </TouchableWithoutFeedback>
     </Modal>
@@ -45,46 +62,53 @@ export default function GlassModal({ visible, onClose, title, children }: GlassM
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(5, 8, 16, 0.82)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
   },
-  modalCard: {
+  keyboardContainer: {
     width: '100%',
     maxWidth: 500,
-    maxHeight: '85%',
-    backgroundColor: 'rgba(15, 23, 42, 0.95)',
-    borderRadius: 24,
+    maxHeight: Platform.OS === 'web' ? ('88vh' as any) : '88%',
+    flexShrink: 1,
+  },
+  modalCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.4)',
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 12,
-    overflow: 'hidden',
+    borderColor: '#E5E7EB',
+    padding: 18,
+    maxHeight: Platform.OS === 'web' ? ('88vh' as any) : '88%',
+    display: 'flex',
+    flexDirection: 'column',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: '#F3F4F6',
+    marginBottom: 12,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
-    color: '#F8FAFC',
+    color: '#171717',
   },
   closeBtn: {
     padding: 4,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
   },
-  body: {
-    padding: 20,
+  scrollView: {
+    flexShrink: 1,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
 });

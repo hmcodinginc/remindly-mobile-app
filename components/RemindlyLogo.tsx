@@ -9,7 +9,7 @@ interface RemindlyLogoProps {
 export default function RemindlyLogo({ size = 60, showBackground = true }: RemindlyLogoProps) {
   const width = size;
   const height = size;
-  const imageSize = showBackground ? size * 0.75 : size;
+  const imageSize = showBackground ? size * 0.8 : size;
 
   return (
     <View
@@ -17,16 +17,21 @@ export default function RemindlyLogo({ size = 60, showBackground = true }: Remin
         styles.container,
         { width, height },
         showBackground && {
-          backgroundColor: '#0B0F19',
+          backgroundColor: '#FFFFFF',
           borderRadius: size * 0.28,
           borderWidth: 1,
-          borderColor: 'rgba(99, 102, 241, 0.3)',
+          borderColor: '#E5E7EB',
           overflow: 'hidden',
+          shadowColor: '#000000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.05,
+          shadowRadius: 4,
+          elevation: 2,
         },
       ]}
     >
       <Image
-        source={require('../assets/logo.png')}
+        source={require('../assets/logo1.png')}
         style={{ width: imageSize, height: imageSize }}
         resizeMode="contain"
       />
@@ -40,4 +45,3 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
-

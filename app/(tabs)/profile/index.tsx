@@ -28,12 +28,9 @@ export default function ProfileScreen() {
     changePassword,
     updateNotificationPreferences,
     message,
-    error,
     clearMessage,
-    clearError,
   } = useAuthStore();
 
-  // Change Password Modal state
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
@@ -51,7 +48,7 @@ export default function ProfileScreen() {
       await openRealEmailApp(
         user.email,
         'Remindly Account Verification Link',
-        `Hello ${user.name || 'Remindly User'},\n\nClick the link below to verify your Remindly account:\nhttps://remindly.app/verify?email=${encodeURIComponent(user.email)}&code=REM-${Math.floor(100000 + Math.random() * 900000)}\n\nBest regards,\nRemindly Team`
+        `Hello ${user.name || 'Remindly User'},\n\nClick the link below to verify your Remindly account:\nhttps://remindly.app/verify?email=${encodeURIComponent(user.email)}`
       );
     }
     await sendEmailVerification();
@@ -101,48 +98,38 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Messages */}
+      {/* Toast Message */}
       {message && (
         <GlassCard style={styles.messageCard}>
           <View style={styles.messageRow}>
-            <Ionicons name="checkmark-circle" size={20} color="#34D399" />
+            <Ionicons name="checkmark-circle" size={18} color="#16A34A" />
             <Text style={styles.messageText}>{message}</Text>
             <TouchableOpacity onPress={clearMessage}>
-              <Ionicons name="close" size={18} color="#94A3B8" />
+              <Ionicons name="close" size={16} color="#6B7280" />
             </TouchableOpacity>
           </View>
         </GlassCard>
       )}
 
-      {/* User Profile Glass Card */}
-      <GlassCard glow style={styles.profileCard}>
+      {/* User Profile Card */}
+      <GlassCard style={styles.profileCard}>
         <View style={styles.profileRow}>
           <View style={styles.avatarCircle}>
             <Text style={styles.avatarText}>{userInitials}</Text>
           </View>
 
-          <View style={{ flex: 1, marginLeft: 14 }}>
+          <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={styles.userName}>{user?.name || 'User'}</Text>
             <Text style={styles.userEmail}>{user?.email || 'user@remindly.app'}</Text>
 
             <View style={styles.badgeRow}>
-              <View
-                style={[
-                  styles.verifiedBadge,
-                  user?.emailVerified ? styles.badgeGreen : styles.badgeAmber,
-                ]}
-              >
+              <View style={[styles.verifiedBadge, user?.emailVerified ? styles.badgeGreen : styles.badgeAmber]}>
                 <Ionicons
                   name={user?.emailVerified ? 'checkmark-circle' : 'alert-circle'}
                   size={12}
-                  color={user?.emailVerified ? '#34D399' : '#FBBF24'}
+                  color={user?.emailVerified ? '#16A34A' : '#D97706'}
                 />
-                <Text
-                  style={[
-                    styles.badgeText,
-                    user?.emailVerified ? { color: '#34D399' } : { color: '#FBBF24' },
-                  ]}
-                >
+                <Text style={[styles.badgeText, { color: user?.emailVerified ? '#16A34A' : '#D97706' }]}>
                   {user?.emailVerified ? 'Verified Email' : 'Unverified Email'}
                 </Text>
               </View>
@@ -156,24 +143,24 @@ export default function ProfileScreen() {
             onPress={handleVerifyEmail}
             variant="secondary"
             icon="mail-outline"
-            style={{ marginTop: 16 }}
+            style={{ marginTop: 14 }}
           />
         )}
       </GlassCard>
 
-      {/* Notification Preferences Section */}
-      <Text style={styles.sectionHeaderTitle}>Notification Preferences</Text>
+      {/* Notification Preferences */}
+      <Text style={styles.sectionTitle}>Notification Preferences</Text>
       <GlassCard style={styles.menuCard}>
         <View style={styles.toggleRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.toggleTitle}>Push & Local Notifications</Text>
-            <Text style={styles.toggleSubtext}>Enable mobile & web push alerts</Text>
+            <Text style={styles.toggleSubtext}>Enable mobile alerts</Text>
           </View>
           <Switch
             value={prefs.push_enabled}
             onValueChange={(val) => updateNotificationPreferences({ push_enabled: val })}
-            trackColor={{ false: '#334155', true: '#6366F1' }}
-            thumbColor={prefs.push_enabled ? '#A78BFA' : '#94A3B8'}
+            trackColor={{ false: '#E5E7EB', true: '#5B5CE2' }}
+            thumbColor={prefs.push_enabled ? '#FFFFFF' : '#9CA3AF'}
           />
         </View>
 
@@ -181,14 +168,14 @@ export default function ProfileScreen() {
 
         <View style={styles.toggleRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.toggleTitle}>📅 1-Week Advance Renewal Alerts</Text>
-            <Text style={styles.toggleSubtext}>Get notified 7 days prior to subscription renew</Text>
+            <Text style={styles.toggleTitle}>Subscription Advance Alerts</Text>
+            <Text style={styles.toggleSubtext}>Alert prior to subscription renewals</Text>
           </View>
           <Switch
             value={prefs.one_week_renewal_alerts}
             onValueChange={(val) => updateNotificationPreferences({ one_week_renewal_alerts: val })}
-            trackColor={{ false: '#334155', true: '#6366F1' }}
-            thumbColor={prefs.one_week_renewal_alerts ? '#A78BFA' : '#94A3B8'}
+            trackColor={{ false: '#E5E7EB', true: '#5B5CE2' }}
+            thumbColor={prefs.one_week_renewal_alerts ? '#FFFFFF' : '#9CA3AF'}
           />
         </View>
 
@@ -196,37 +183,37 @@ export default function ProfileScreen() {
 
         <View style={styles.toggleRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.toggleTitle}>⚠️ Overdue Task Warnings</Text>
+            <Text style={styles.toggleTitle}>Overdue Task Warnings</Text>
             <Text style={styles.toggleSubtext}>Receive alerts for past due tasks</Text>
           </View>
           <Switch
             value={prefs.overdue_alerts}
             onValueChange={(val) => updateNotificationPreferences({ overdue_alerts: val })}
-            trackColor={{ false: '#334155', true: '#6366F1' }}
-            thumbColor={prefs.overdue_alerts ? '#A78BFA' : '#94A3B8'}
+            trackColor={{ false: '#E5E7EB', true: '#5B5CE2' }}
+            thumbColor={prefs.overdue_alerts ? '#FFFFFF' : '#9CA3AF'}
           />
         </View>
       </GlassCard>
 
-      {/* Account Security & Password Section */}
-      <Text style={styles.sectionHeaderTitle}>Security & Account</Text>
+      {/* Account Security Section */}
+      <Text style={styles.sectionTitle}>Security & Account</Text>
       <GlassCard style={styles.menuCard}>
         <TouchableOpacity style={styles.menuItem} onPress={() => setPasswordModalVisible(true)}>
-          <View style={[styles.menuIconBg, { backgroundColor: 'rgba(99, 102, 241, 0.2)' }]}>
-            <Ionicons name="key-outline" size={20} color="#818CF8" />
+          <View style={styles.menuIconBg}>
+            <Ionicons name="key-outline" size={18} color="#5B5CE2" />
           </View>
           <Text style={styles.menuItemText}>Change Password</Text>
-          <Ionicons name="chevron-forward" size={18} color="#64748B" />
+          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
         </TouchableOpacity>
 
         <View style={styles.divider} />
 
         <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/analytics' as any)}>
-          <View style={[styles.menuIconBg, { backgroundColor: 'rgba(167, 139, 250, 0.2)' }]}>
-            <Ionicons name="bar-chart-outline" size={20} color="#A78BFA" />
+          <View style={styles.menuIconBg}>
+            <Ionicons name="bar-chart-outline" size={18} color="#5B5CE2" />
           </View>
-          <Text style={styles.menuItemText}>Spending & Task Analytics Reports</Text>
-          <Ionicons name="chevron-forward" size={18} color="#64748B" />
+          <Text style={styles.menuItemText}>Spending & Task Reports</Text>
+          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
         </TouchableOpacity>
       </GlassCard>
 
@@ -239,7 +226,10 @@ export default function ProfileScreen() {
         style={styles.logoutBtn}
       />
 
-  
+      <Text style={styles.versionText}>
+        Remindly Mobile v1.0.0 • Clean White Design
+      </Text>
+
       {/* Change Password Modal */}
       <GlassModal
         visible={passwordModalVisible}
@@ -281,18 +271,18 @@ export default function ProfileScreen() {
         />
       </GlassModal>
 
-      {/* Email Dispatcher Modal */}
+      {/* Email Verification Modal */}
       <GlassModal
         visible={emailModalVisible}
         onClose={() => setEmailModalVisible(false)}
-        title="Email Verification Link"
+        title="Email Verification"
       >
-        <Text style={{ color: '#CBD5E1', fontSize: 13, marginBottom: 14, lineHeight: 18 }}>
-          Dispatch a real verification email link to <Text style={{ color: '#F8FAFC', fontWeight: '700' }}>{user?.email}</Text> or verify your account directly.
+        <Text style={{ color: '#6B7280', fontSize: 13, marginBottom: 14, lineHeight: 18 }}>
+          Dispatch a verification email to <Text style={{ color: '#171717', fontWeight: '600' }}>{user?.email}</Text>.
         </Text>
 
         <GlassButton
-          title="Open Gmail / Mail Client App"
+          title="Open Gmail / Mail App"
           onPress={handleOpenMailClient}
           variant="primary"
           icon="mail-outline"
@@ -300,7 +290,7 @@ export default function ProfileScreen() {
         />
 
         <GlassButton
-          title="Verify Account Status Directly"
+          title="Verify Account Directly"
           onPress={handleInstantVerify}
           variant="secondary"
           icon="checkmark-circle-outline"
@@ -313,7 +303,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070A14',
+    backgroundColor: '#FFFFFF',
   },
   content: {
     padding: 16,
@@ -323,9 +313,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   messageCard: {
-    marginBottom: 16,
-    borderColor: 'rgba(52, 211, 153, 0.4)',
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    marginBottom: 14,
+    backgroundColor: '#DCFCE7',
+    borderColor: '#86EFAC',
   },
   messageRow: {
     flexDirection: 'row',
@@ -333,124 +323,125 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   messageText: {
-    color: '#34D399',
+    color: '#15803D',
     fontSize: 13,
     flex: 1,
   },
   profileCard: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatarCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 22,
-    backgroundColor: 'rgba(99, 102, 241, 0.3)',
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#EEF2FF',
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.5)',
+    borderColor: '#C7D2FE',
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#F8FAFC',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#5B5CE2',
   },
   userName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#F8FAFC',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#171717',
   },
   userEmail: {
     fontSize: 13,
-    color: '#94A3B8',
-    marginTop: 2,
+    color: '#6B7280',
+    marginTop: 1,
   },
   badgeRow: {
     flexDirection: 'row',
-    marginTop: 6,
+    marginTop: 4,
   },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
     gap: 4,
     borderWidth: 1,
   },
   badgeGreen: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    borderColor: 'rgba(52, 211, 153, 0.3)',
+    backgroundColor: '#DCFCE7',
+    borderColor: '#86EFAC',
   },
   badgeAmber: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    backgroundColor: '#FEF3C7',
+    borderColor: '#FDE047',
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '600',
   },
-  sectionHeaderTitle: {
-    fontSize: 15,
+  sectionTitle: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#F8FAFC',
-    marginBottom: 10,
-    marginTop: 10,
+    color: '#171717',
+    marginBottom: 8,
+    marginTop: 8,
   },
   menuCard: {
-    marginBottom: 18,
-    paddingVertical: 6,
+    marginBottom: 16,
+    paddingVertical: 4,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   toggleTitle: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#F8FAFC',
+    fontWeight: '600',
+    color: '#171717',
   },
   toggleSubtext: {
     fontSize: 12,
-    color: '#94A3B8',
-    marginTop: 2,
+    color: '#6B7280',
+    marginTop: 1,
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: '#F3F4F6',
     marginVertical: 4,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   menuIconBg: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: 10,
   },
   menuItemText: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '600',
-    color: '#F8FAFC',
+    fontWeight: '500',
+    color: '#171717',
   },
   logoutBtn: {
-    marginTop: 8,
+    marginTop: 4,
     marginBottom: 16,
   },
   versionText: {
     textAlign: 'center',
     fontSize: 11,
-    color: '#64748B',
+    color: '#9CA3AF',
   },
 });

@@ -29,33 +29,33 @@ interface AddReminderModalProps {
 }
 
 const TYPE_OPTIONS: { label: string; value: ReminderType; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-  { label: 'Task', value: 'task', icon: 'checkbox-outline', color: '#34D399' },
-  { label: 'Subscription', value: 'subscription', icon: 'card-outline', color: '#818CF8' },
-  { label: 'Payment / Bill', value: 'payment', icon: 'cash-outline', color: '#FBBF24' },
-  { label: 'Appointment', value: 'appointment', icon: 'calendar-outline', color: '#60A5FA' },
-  { label: 'Vehicle / Renewal', value: 'renewal', icon: 'car-outline', color: '#F87171' },
-  { label: 'Birthday / Custom', value: 'custom', icon: 'gift-outline', color: '#A78BFA' },
+  { label: 'Task', value: 'task', icon: 'checkbox-outline', color: '#5B5CE2' },
+  { label: 'Bill', value: 'payment', icon: 'receipt-outline', color: '#D97706' },
+  { label: 'Appointment', value: 'appointment', icon: 'calendar-outline', color: '#2563EB' },
+  { label: 'Subscription', value: 'subscription', icon: 'card-outline', color: '#7C3AED' },
+  { label: 'General', value: 'custom', icon: 'bookmark-outline', color: '#059669' },
 ];
 
 const CATEGORY_OPTIONS: PickerOption[] = [
-  { label: 'Entertainment', value: 'Entertainment', icon: 'tv-outline', color: '#818CF8' },
-  { label: 'Bills & Utilities', value: 'Bills', icon: 'flash-outline', color: '#FBBF24' },
-  { label: 'Health & Medical', value: 'Health', icon: 'heart-outline', color: '#F87171' },
-  { label: 'Work & Projects', value: 'Work', icon: 'briefcase-outline', color: '#60A5FA' },
-  { label: 'Personal & Family', value: 'Personal', icon: 'person-outline', color: '#34D399' },
-  { label: 'Vehicle & Service', value: 'Vehicle & Service', icon: 'car-outline', color: '#FB923C' },
-  { label: 'Birthdays & Events', value: 'Birthdays', icon: 'gift-outline', color: '#E879F9' },
-  { label: 'Subscriptions', value: 'Subscriptions', icon: 'card-outline', color: '#818CF8' },
-  { label: 'General Reminders', value: 'General', icon: 'bookmark-outline', color: '#94A3B8' },
+  { label: 'Entertainment', value: 'Entertainment', icon: 'tv-outline' },
+  { label: 'Bills & Utilities', value: 'Bills', icon: 'flash-outline' },
+  { label: 'Health & Medical', value: 'Health', icon: 'heart-outline' },
+  { label: 'Work & Projects', value: 'Work', icon: 'briefcase-outline' },
+  { label: 'Personal & Family', value: 'Personal', icon: 'person-outline' },
+  { label: 'Vehicle & Service', value: 'Vehicle & Service', icon: 'car-outline' },
+  { label: 'Birthdays & Events', value: 'Birthdays', icon: 'gift-outline' },
+  { label: 'Subscriptions', value: 'Subscriptions', icon: 'card-outline' },
+  { label: 'General', value: 'General', icon: 'bookmark-outline' },
 ];
 
-const PAYMENT_OPTIONS: PickerOption[] = [
-  { label: 'Credit Card (**** 4242)', value: 'Credit Card (**** 4242)', icon: 'card-outline' },
-  { label: 'Debit Card', value: 'Debit Card', icon: 'card-outline' },
-  { label: 'Bank Transfer / ACH', value: 'Bank Transfer', icon: 'business-outline' },
-  { label: 'Cash', value: 'Cash', icon: 'cash-outline' },
-  { label: 'UPI / Digital Wallet', value: 'UPI', icon: 'qr-code-outline' },
-  { label: 'Apple / Google Pay', value: 'Apple / Google Pay', icon: 'phone-portrait-outline' },
+const ALERT_TIMING_OPTIONS: PickerOption[] = [
+  { label: '1 Day Before', value: '1' },
+  { label: '3 Days Before', value: '3' },
+  { label: '1 Week (7 Days) Before', value: '7' },
+  { label: '14 Days Before', value: '14' },
+  { label: '20 Days Before', value: '20' },
+  { label: '1 Month (30 Days) Before', value: '30' },
+  { label: 'On Renewal Date', value: '0' },
 ];
 
 const CYCLE_OPTIONS: PickerOption[] = [
@@ -67,10 +67,10 @@ const CYCLE_OPTIONS: PickerOption[] = [
 ];
 
 const PRIORITY_OPTIONS: PickerOption[] = [
-  { label: 'Urgent Priority', value: 'urgent', icon: 'alert-circle-outline', color: '#F87171' },
-  { label: 'High Priority', value: 'high', icon: 'warning-outline', color: '#FBBF24' },
-  { label: 'Medium Priority', value: 'medium', icon: 'remove-circle-outline', color: '#818CF8' },
-  { label: 'Low Priority', value: 'low', icon: 'arrow-down-circle-outline', color: '#34D399' },
+  { label: 'Urgent Priority', value: 'urgent', icon: 'alert-circle-outline', color: '#DC2626' },
+  { label: 'High Priority', value: 'high', icon: 'warning-outline', color: '#D97706' },
+  { label: 'Medium Priority', value: 'medium', icon: 'remove-circle-outline', color: '#4F46E5' },
+  { label: 'Low Priority', value: 'low', icon: 'arrow-down-circle-outline', color: '#16A34A' },
 ];
 
 export default function AddReminderModal({
@@ -89,11 +89,9 @@ export default function AddReminderModal({
   const [amount, setAmount] = useState(editingReminder?.amount ? editingReminder.amount.toString() : '');
   const [currency, setCurrency] = useState(editingReminder?.currency || '$');
   const [cycle, setCycle] = useState<BillingCycle>(editingReminder?.billing_cycle || 'monthly');
-  const [paymentMethod, setPaymentMethod] = useState(editingReminder?.payment_method || 'Credit Card (**** 4242)');
   const [priority, setPriority] = useState<TaskPriority>(editingReminder?.priority || 'medium');
   const [reminderEnabled, setReminderEnabled] = useState(editingReminder?.reminder_enabled ?? true);
   const [advanceNoticeDays, setAdvanceNoticeDays] = useState(editingReminder?.advance_notice_days || 7);
-  const [autoPay, setAutoPay] = useState(editingReminder?.auto_pay ?? true);
   const [description, setDescription] = useState(editingReminder?.description || '');
 
   const addReminder = useReminderStore((state) => state.addReminder);
@@ -117,11 +115,9 @@ export default function AddReminderModal({
         amount: parsedAmount,
         currency,
         billing_cycle: cycle,
-        payment_method: paymentMethod as any,
         priority,
         reminder_enabled: reminderEnabled,
         advance_notice_days: advanceNoticeDays,
-        auto_pay: autoPay,
         description: description.trim(),
       });
     } else {
@@ -135,16 +131,13 @@ export default function AddReminderModal({
         amount: parsedAmount,
         currency,
         billing_cycle: cycle,
-        payment_method: paymentMethod as any,
         priority,
         reminder_enabled: reminderEnabled,
         advance_notice_days: advanceNoticeDays,
-        auto_pay: autoPay,
         status: 'pending',
         description: description.trim(),
       });
 
-      // Also sync to specialized stores if Subscription or Task
       if (type === 'subscription') {
         addSubscription({
           user: 'user-1',
@@ -154,8 +147,8 @@ export default function AddReminderModal({
           billing_cycle: cycle,
           renewal_date: dueDate,
           category,
-          auto_renew: autoPay,
-          payment_method: paymentMethod as string,
+          auto_renew: true,
+          payment_method: `${advanceNoticeDays} Days Notice Alert`,
           status: 'active',
           description: description.trim(),
           reminder_days_before: advanceNoticeDays,
@@ -174,12 +167,11 @@ export default function AddReminderModal({
         });
       }
 
-      // Schedule Push Notification Alert
       if (reminderEnabled) {
         addNotification({
           user: 'user-1',
           title: `🔔 ${type.toUpperCase()} Reminder`,
-          message: `"${cleanTitle}" scheduled for ${dueDate} at ${dueTime}.`,
+          message: `"${cleanTitle}" scheduled for ${dueDate}.`,
           type: type === 'subscription' ? 'subscription_renewal' : 'task_reminder',
           is_read: false,
           target_type: 'reminder',
@@ -187,7 +179,7 @@ export default function AddReminderModal({
         });
         await scheduleLocalNotification(
           `🔔 ${cleanTitle}`,
-          `Reminder due: ${dueDate} (${dueTime})`,
+          `Reminder due: ${dueDate}`,
           { target_type: 'reminder', deep_link: '/(tabs)/dashboard' },
           5
         );
@@ -203,8 +195,8 @@ export default function AddReminderModal({
       onClose={onClose}
       title={editingReminder ? 'Edit Reminder' : 'Add New Reminder'}
     >
-      {/* Reminder Type Pills Selector */}
-      <Text style={styles.typeLabel}>Select Reminder Type</Text>
+      {/* Type Selector Pills */}
+      <Text style={styles.typeLabel}>Reminder Type</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.typeScroll}>
         <View style={styles.typeRow}>
           {TYPE_OPTIONS.map((t) => {
@@ -214,17 +206,16 @@ export default function AddReminderModal({
                 key={t.value}
                 style={[
                   styles.typePill,
-                  isSelected && { backgroundColor: 'rgba(99, 102, 241, 0.3)', borderColor: t.color },
+                  isSelected && styles.typePillActive,
                 ]}
                 onPress={() => {
                   setType(t.value);
                   if (t.value === 'subscription') setCategory('Subscriptions');
                   if (t.value === 'payment') setCategory('Bills');
-                  if (t.value === 'renewal') setCategory('Vehicle & Service');
                 }}
               >
-                <Ionicons name={t.icon} size={16} color={isSelected ? t.color : '#94A3B8'} />
-                <Text style={[styles.typePillText, isSelected && { color: '#F8FAFC', fontWeight: '700' }]}>
+                <Ionicons name={t.icon} size={15} color={isSelected ? '#5B5CE2' : '#6B7280'} />
+                <Text style={[styles.typePillText, isSelected && styles.typePillTextActive]}>
                   {t.label}
                 </Text>
               </TouchableOpacity>
@@ -233,26 +224,24 @@ export default function AddReminderModal({
         </View>
       </ScrollView>
 
-      {/* Title Field (Always shown) */}
+      {/* Title Field */}
       <GlassInput
         label="Title *"
         placeholder={
           type === 'subscription'
             ? 'Netflix, Spotify, Cloud Storage...'
             : type === 'payment'
-            ? 'Rent, Electricity Bill, Credit Card...'
+            ? 'Electricity Bill, Rent, Credit Card...'
             : type === 'appointment'
-            ? 'Doctor Checkup, Dentist, Client Meeting...'
-            : type === 'renewal'
-            ? 'Car Insurance, License Renewal...'
-            : 'Prepare report, Birthday gift...'
+            ? 'Doctor Appointment, Client Meeting...'
+            : 'Prepare report, Birthday...'
         }
         value={title}
         onChangeText={setTitle}
         iconName="bookmark-outline"
       />
 
-      {/* Category Dropdown (Always shown) */}
+      {/* Category Dropdown */}
       <GlassPicker
         label="Category"
         value={category}
@@ -265,7 +254,7 @@ export default function AddReminderModal({
       <View style={styles.flexRow}>
         <View style={{ flex: 1, marginRight: 6 }}>
           <GlassDatePicker
-            label={type === 'subscription' || type === 'renewal' ? 'Renewal / Due Date' : 'Due Date'}
+            label={type === 'subscription' ? 'Renewal Date' : 'Due Date'}
             value={dueDate}
             onSelect={setDueDate}
           />
@@ -282,13 +271,13 @@ export default function AddReminderModal({
         )}
       </View>
 
-      {/* Amount & Currency (Relevant for Subscriptions & Payments) */}
-      {(type === 'subscription' || type === 'payment') && (
+      {/* Amount & Alert Timing for Subscriptions */}
+      {type === 'subscription' && (
         <View style={styles.flexRow}>
           <View style={{ flex: 1, marginRight: 6 }}>
             <GlassInput
               label="Amount ($) *"
-              placeholder="19.99"
+              placeholder="14.99"
               value={amount}
               onChangeText={setAmount}
               keyboardType="decimal-pad"
@@ -298,20 +287,32 @@ export default function AddReminderModal({
 
           <View style={{ flex: 1, marginLeft: 6 }}>
             <GlassPicker
-              label="Payment Method"
-              value={paymentMethod}
-              options={PAYMENT_OPTIONS}
-              onSelect={setPaymentMethod}
-              iconName="wallet-outline"
+              label="Send Alert Notice"
+              value={advanceNoticeDays.toString()}
+              options={ALERT_TIMING_OPTIONS}
+              onSelect={(val) => setAdvanceNoticeDays(parseInt(val) || 7)}
+              iconName="notifications-outline"
             />
           </View>
         </View>
       )}
 
-      {/* Billing / Repeat Cycle (Relevant for Subscriptions & Custom) */}
-      {(type === 'subscription' || type === 'custom') && (
+      {/* Amount for Payments */}
+      {type === 'payment' && (
+        <GlassInput
+          label="Bill Amount ($) *"
+          placeholder="85.00"
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="decimal-pad"
+          iconName="cash-outline"
+        />
+      )}
+
+      {/* Billing Cycle for Subscriptions */}
+      {type === 'subscription' && (
         <GlassPicker
-          label="Billing / Repeat Cycle"
+          label="Billing Cycle"
           value={cycle}
           options={CYCLE_OPTIONS}
           onSelect={(v) => setCycle(v as BillingCycle)}
@@ -319,7 +320,7 @@ export default function AddReminderModal({
         />
       )}
 
-      {/* Priority Level (Relevant for Tasks) */}
+      {/* Priority Level for Tasks */}
       {type === 'task' && (
         <GlassPicker
           label="Priority Level"
@@ -330,32 +331,24 @@ export default function AddReminderModal({
         />
       )}
 
-      {/* Toggle Switches */}
+      {/* Switch Toggle */}
       <View style={styles.switchBox}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.switchTitle}>
-            {type === 'subscription' || type === 'payment'
-              ? 'Auto Pay / Auto Renew & Advance Alert'
-              : 'Enable Notification Alert'}
-          </Text>
-          <Text style={styles.switchSubtitle}>
-            {type === 'subscription'
-              ? 'Send advance alert 7 days before renewal'
-              : 'Trigger mobile & web notification'}
-          </Text>
+          <Text style={styles.switchTitle}>Enable Notifications</Text>
+          <Text style={styles.switchSubtitle}>Send local alert to mobile device</Text>
         </View>
         <Switch
           value={reminderEnabled}
           onValueChange={setReminderEnabled}
-          trackColor={{ false: '#334155', true: '#6366F1' }}
-          thumbColor={reminderEnabled ? '#A78BFA' : '#94A3B8'}
+          trackColor={{ false: '#E5E7EB', true: '#5B5CE2' }}
+          thumbColor={reminderEnabled ? '#FFFFFF' : '#9CA3AF'}
         />
       </View>
 
-      {/* Multiline Notes Textarea without overlap */}
+      {/* Multiline Notes */}
       <GlassInput
         label="Notes & Details"
-        placeholder="Add account details, URLs, notes, or instructions..."
+        placeholder="Add details, notes, or instructions..."
         value={description}
         onChangeText={setDescription}
         multiline
@@ -364,7 +357,7 @@ export default function AddReminderModal({
       />
 
       <GlassButton
-        title={editingReminder ? 'Update Reminder' : 'Create & Schedule Reminder'}
+        title={editingReminder ? 'Update Reminder' : 'Create Reminder'}
         onPress={handleSave}
         variant="primary"
         disabled={!title.trim()}
@@ -376,13 +369,13 @@ export default function AddReminderModal({
 
 const styles = StyleSheet.create({
   typeLabel: {
-    color: '#CBD5E1',
+    color: '#374151',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 8,
   },
   typeScroll: {
-    marginBottom: 16,
+    marginBottom: 14,
   },
   typeRow: {
     flexDirection: 'row',
@@ -392,17 +385,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: '#0F172A',
+    paddingVertical: 7,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
+    borderColor: '#E5E7EB',
     gap: 6,
+  },
+  typePillActive: {
+    backgroundColor: '#EEF2FF',
+    borderColor: '#5B5CE2',
   },
   typePillText: {
     fontSize: 12,
-    color: '#CBD5E1',
-    fontWeight: '600',
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  typePillTextActive: {
+    color: '#5B5CE2',
+    fontWeight: '700',
   },
   flexRow: {
     flexDirection: 'row',
@@ -412,21 +413,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
+    backgroundColor: '#F7F8FA',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
+    borderColor: '#E5E7EB',
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   switchTitle: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#F8FAFC',
+    fontWeight: '600',
+    color: '#171717',
   },
   switchSubtitle: {
     fontSize: 11,
-    color: '#94A3B8',
+    color: '#6B7280',
     marginTop: 2,
   },
 });

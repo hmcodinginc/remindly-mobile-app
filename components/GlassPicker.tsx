@@ -51,12 +51,12 @@ export default function GlassPicker({
           <Ionicons
             name={selectedOption.icon || iconName}
             size={18}
-            color={selectedOption.color || '#818CF8'}
+            color={selectedOption.color || '#5B5CE2'}
             style={styles.leftIcon}
           />
           <Text style={styles.valueText}>{selectedOption.label}</Text>
         </View>
-        <Ionicons name="chevron-down" size={18} color="#94A3B8" />
+        <Ionicons name="chevron-down" size={18} color="#6B7280" />
       </TouchableOpacity>
 
       {/* Modal Dropdown Picker */}
@@ -73,7 +73,7 @@ export default function GlassPicker({
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>{label || 'Select Option'}</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                    <Ionicons name="close" size={20} color="#94A3B8" />
+                    <Ionicons name="close" size={20} color="#6B7280" />
                   </TouchableOpacity>
                 </View>
 
@@ -91,7 +91,7 @@ export default function GlassPicker({
                             <Ionicons
                               name={opt.icon}
                               size={18}
-                              color={opt.color || (isSelected ? '#A78BFA' : '#94A3B8')}
+                              color={opt.color || (isSelected ? '#5B5CE2' : '#6B7280')}
                               style={{ marginRight: 10 }}
                             />
                           )}
@@ -99,7 +99,7 @@ export default function GlassPicker({
                             {opt.label}
                           </Text>
                         </View>
-                        {isSelected && <Ionicons name="checkmark" size={18} color="#A78BFA" />}
+                        {isSelected && <Ionicons name="checkmark" size={18} color="#5B5CE2" />}
                       </TouchableOpacity>
                     );
                   })}
@@ -115,26 +115,25 @@ export default function GlassPicker({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 14,
     width: '100%',
   },
   label: {
-    color: '#CBD5E1',
+    color: '#374151',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 6,
-    letterSpacing: 0.2,
   },
   pickerBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
+    backgroundColor: '#F7F8FA',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.35)',
-    paddingHorizontal: 14,
-    height: 48,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    height: 46,
   },
   leftRow: {
     flexDirection: 'row',
@@ -145,13 +144,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   valueText: {
-    color: '#F8FAFC',
+    color: '#171717',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(5, 8, 16, 0.82)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
@@ -160,12 +159,12 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 440,
     maxHeight: '75%',
-    backgroundColor: '#0E1424',
-    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.4)',
+    borderColor: '#E5E7EB',
     padding: 16,
-    elevation: 12,
+    elevation: 8,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -173,13 +172,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: '#F3F4F6',
     marginBottom: 8,
   },
   modalTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#F8FAFC',
+    color: '#171717',
   },
   closeBtn: {
     padding: 4,
@@ -193,11 +192,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: 10,
     marginBottom: 4,
   },
   selectedOptionItem: {
-    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+    backgroundColor: '#EEF2FF',
   },
   optionLeft: {
     flexDirection: 'row',
@@ -205,11 +204,11 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 14,
-    color: '#CBD5E1',
+    color: '#374151',
     fontWeight: '500',
   },
   selectedOptionLabel: {
-    color: '#F8FAFC',
+    color: '#5B5CE2',
     fontWeight: '700',
   },
 });

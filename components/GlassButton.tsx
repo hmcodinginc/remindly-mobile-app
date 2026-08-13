@@ -1,5 +1,13 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle, View } from 'react-native';
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  ViewStyle,
+  StyleProp,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface GlassButtonProps {
@@ -9,8 +17,7 @@ interface GlassButtonProps {
   loading?: boolean;
   disabled?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export default function GlassButton({
@@ -21,33 +28,32 @@ export default function GlassButton({
   disabled = false,
   icon,
   style,
-  textStyle,
 }: GlassButtonProps) {
   const getVariantStyles = () => {
     switch (variant) {
       case 'secondary':
         return {
-          bg: 'rgba(30, 41, 59, 0.8)',
-          border: 'rgba(99, 102, 241, 0.4)',
-          text: '#818CF8',
+          btn: styles.secondaryBtn,
+          text: styles.secondaryText,
+          iconColor: '#374151',
         };
       case 'danger':
         return {
-          bg: 'rgba(239, 68, 68, 0.2)',
-          border: 'rgba(239, 68, 68, 0.5)',
-          text: '#F87171',
+          btn: styles.dangerBtn,
+          text: styles.dangerText,
+          iconColor: '#EF4444',
         };
       case 'ghost':
         return {
-          bg: 'transparent',
-          border: 'transparent',
-          text: '#94A3B8',
+          btn: styles.ghostBtn,
+          text: styles.ghostText,
+          iconColor: '#5B5CE2',
         };
       default:
         return {
-          bg: 'rgba(99, 102, 241, 0.85)',
-          border: 'rgba(139, 92, 246, 0.6)',
-          text: '#FFFFFF',
+          btn: styles.primaryBtn,
+          text: styles.primaryText,
+          iconColor: '#FFFFFF',
         };
     }
   };
@@ -56,25 +62,17 @@ export default function GlassButton({
 
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
+      activeOpacity={0.85}
       onPress={onPress}
       disabled={disabled || loading}
-      style={[
-        styles.button,
-        {
-          backgroundColor: vStyle.bg,
-          borderColor: vStyle.border,
-          opacity: disabled ? 0.5 : 1,
-        },
-        style,
-      ]}
+      style={[styles.button, vStyle.btn, disabled && styles.disabled, style]}
     >
       {loading ? (
-        <ActivityIndicator color={vStyle.text} size="small" />
+        <ActivityIndicator color={variant === 'primary' ? '#FFFFFF' : '#5B5CE2'} size="small" />
       ) : (
         <View style={styles.contentRow}>
-          {icon && <Ionicons name={icon} size={18} color={vStyle.text} style={styles.icon} />}
-          <Text style={[styles.text, { color: vStyle.text }, textStyle]}>{title}</Text>
+          {icon && <Ionicons name={icon} size={18} color={vStyle.iconColor} style={{ marginRight: 6 }} />}
+          <Text style={[styles.text, vStyle.text]}>{title}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -83,29 +81,49 @@ export default function GlassButton({
 
 const styles = StyleSheet.create({
   button: {
-    height: 48,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: 12,
+    height: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    shadowColor: '#6366F1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
+    paddingHorizontal: 16,
   },
   contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    marginRight: 8,
   },
   text: {
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  primaryBtn: {
+    backgroundColor: '#5B5CE2',
+  },
+  primaryText: {
+    color: '#FFFFFF',
+  },
+  secondaryBtn: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  secondaryText: {
+    color: '#374151',
+  },
+  dangerBtn: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  dangerText: {
+    color: '#DC2626',
+  },
+  ghostBtn: {
+    backgroundColor: 'transparent',
+  },
+  ghostText: {
+    color: '#5B5CE2',
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

@@ -34,12 +34,12 @@ export default function GlassInput({
           <Ionicons
             name={iconName}
             size={18}
-            color="#818CF8"
+            color="#5B5CE2"
             style={[styles.leftIcon, multiline && styles.multilineLeftIcon]}
           />
         )}
         <TextInput
-          placeholderTextColor="#64748B"
+          placeholderTextColor="#9CA3AF"
           multiline={multiline}
           style={[
             styles.input,
@@ -51,7 +51,7 @@ export default function GlassInput({
         />
         {rightIcon && (
           <TouchableOpacity onPress={onRightIconPress} style={styles.rightIconBtn}>
-            <Ionicons name={rightIcon} size={18} color="#94A3B8" />
+            <Ionicons name={rightIcon} size={18} color="#6B7280" />
           </TouchableOpacity>
         )}
       </View>
@@ -62,34 +62,33 @@ export default function GlassInput({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: 14,
     width: '100%',
   },
   label: {
-    color: '#CBD5E1',
+    color: '#374151',
     fontSize: 13,
     fontWeight: '600',
     marginBottom: 6,
-    letterSpacing: 0.2,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0F172A',
-    borderRadius: 14,
+    backgroundColor: '#F7F8FA',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(99, 102, 241, 0.35)',
-    paddingHorizontal: 14,
-    height: 48,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    height: 46,
   },
   multilineWrapper: {
     height: undefined,
-    minHeight: 84,
+    minHeight: 80,
     alignItems: 'flex-start',
     paddingVertical: 10,
   },
   inputError: {
-    borderColor: '#F87171',
+    borderColor: '#EF4444',
   },
   leftIcon: {
     marginRight: 10,
@@ -99,7 +98,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#F8FAFC',
+    color: '#171717',
     fontSize: 14,
     paddingVertical: 0,
     backgroundColor: 'transparent',
@@ -112,7 +111,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   errorText: {
-    color: '#F87171',
+    color: '#EF4444',
     fontSize: 12,
     marginTop: 4,
   },

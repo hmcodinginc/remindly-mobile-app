@@ -9,106 +9,110 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotificationStore } from '../../../store/useNotificationStore';
+import { NotificationItem } from '../../../types';
 import GlassCard from '../../../components/GlassCard';
+import GlassButton from '../../../components/GlassButton';
 
 export default function NotificationsScreen() {
   const router = useRouter();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAll } =
-    useNotificationStore();
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAll,
+  } = useNotificationStore();
 
-  const handleNotifPress = (item: any) => {
+  const handleNotificationPress = (item: NotificationItem) => {
     markAsRead(item.id);
     if (item.deep_link) {
       router.push(item.deep_link as any);
     }
   };
 
-  const getNotifIcon = (type: string) => {
+  const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'subscription_renewal':
-        return { icon: 'card-outline', color: '#818CF8', bg: 'rgba(99, 102, 241, 0.2)' };
-      case 'task_reminder':
-        return { icon: 'checkbox-outline', color: '#34D399', bg: 'rgba(52, 211, 153, 0.2)' };
+        return { name: 'card', color: '#5B5CE2', bg: '#EEF2FF' };
       case 'overdue_task':
-        return { icon: 'warning-outline', color: '#F87171', bg: 'rgba(239, 68, 68, 0.2)' };
-      case 'habit_reminder':
-        return { icon: 'flame-outline', color: '#FBBF24', bg: 'rgba(245, 158, 11, 0.2)' };
+        return { name: 'warning', color: '#DC2626', bg: '#FEF2F2' };
+      case 'task_reminder':
+        return { name: 'checkbox', color: '#2563EB', bg: '#EFF6FF' };
       default:
-        return { icon: 'notifications-outline', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.2)' };
+        return { name: 'notifications', color: '#059669', bg: '#ECFDF5' };
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Header bar */}
-      <GlassCard glow style={styles.topHeader}>
-        <View style={styles.headerRow}>
-          <View style={styles.titleGroup}>
-            <Text style={styles.headerTitle}>Notifications Center</Text>
-            {unreadCount > 0 && (
-              <View style={styles.badgeChip}>
-                <Text style={styles.badgeText}>{unreadCount} new</Text>
-              </View>
-            )}
-          </View>
+      {/* Header Actions */}
+      <View style={styles.actionHeader}>
+        <Text style={styles.headerTitle}>
+          Alerts {unreadCount > 0 && `(${unreadCount} Unread)`}
+        </Text>
+        <View style={styles.actionRow}>
+          {unreadCount > 0 && (
+            <TouchableOpacity onPress={markAllAsRead} style={styles.actionBtn}>
+              <Ionicons name="checkmark-done-outline" size={16} color="#5B5CE2" />
+              <Text style={styles.actionBtnText}>Read All</Text>
+            </TouchableOpacity>
+          )}
 
-          <View style={styles.actionsRow}>
-            {unreadCount > 0 && (
-              <TouchableOpacity onPress={markAllAsRead}>
-                <Text style={styles.actionText}>Mark all read</Text>
-              </TouchableOpacity>
-            )}
-            {notifications.length > 0 && (
-              <TouchableOpacity onPress={clearAll}>
-                <Text style={[styles.actionText, { color: '#F87171' }]}>Clear</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          {notifications.length > 0 && (
+            <TouchableOpacity onPress={clearAll} style={styles.actionBtn}>
+              <Ionicons name="trash-outline" size={16} color="#EF4444" />
+              <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Clear</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </GlassCard>
+      </View>
 
+      {/* Notifications List */}
       <FlatList
         data={notifications}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <GlassCard style={styles.emptyState}>
-            <Ionicons name="notifications-off-outline" size={48} color="#64748B" />
-            <Text style={styles.emptyText}>No notifications yet</Text>
+          <GlassCard style={styles.emptyCard}>
+            <Ionicons name="notifications-off-outline" size={40} color="#9CA3AF" />
+            <Text style={styles.emptyTitle}>No Alerts</Text>
+            <Text style={styles.emptySub}>You have no unread notifications or advance alerts.</Text>
           </GlassCard>
         }
         renderItem={({ item }) => {
-          const config = getNotifIcon(item.type);
+          const iconMeta = getNotificationIcon(item.type);
           return (
             <GlassCard
-              style={[
-                styles.card,
-                !item.is_read && styles.unreadCard,
-              ]}
-              onPress={() => handleNotifPress(item)}
+              style={[styles.notifCard, !item.is_read && styles.unreadCard]}
+              onPress={() => handleNotificationPress(item)}
             >
-              <View style={styles.cardContent}>
-                <View style={[styles.iconBg, { backgroundColor: config.bg }]}>
-                  <Ionicons name={config.icon as any} size={22} color={config.color} />
+              <View style={styles.cardRow}>
+                <View style={[styles.iconBg, { backgroundColor: iconMeta.bg }]}>
+                  <Ionicons name={iconMeta.name as any} size={20} color={iconMeta.color} />
                 </View>
 
                 <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={styles.notifTitle}>{item.title}</Text>
-                  <Text style={styles.notifMessage}>{item.message}</Text>
-                  <Text style={styles.timeText}>
-                    {new Date(item.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • Tap to view
-                  </Text>
+                  <View style={styles.titleRow}>
+                    <Text style={[styles.notifTitle, !item.is_read && styles.unreadTitle]}>
+                      {item.title}
+                    </Text>
+                    {!item.is_read && <View style={styles.unreadDot} />}
+                  </View>
+
+                  <Text style={styles.messageText}>{item.message}</Text>
+                  <Text style={styles.timeText}>{item.created ? item.created.slice(0, 10) : 'Today'}</Text>
                 </View>
 
-                <View style={{ alignItems: 'flex-end', gap: 10 }}>
-                  {!item.is_read && <View style={styles.unreadDot} />}
-                  <TouchableOpacity
-                    onPress={() => deleteNotification(item.id)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Ionicons name="close-circle-outline" size={20} color="#64748B" />
-                  </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    deleteNotification(item.id);
+                  }}
+                >
+                  <Ionicons name="close-circle-outline" size={18} color="#9CA3AF" />
+                </TouchableOpacity>
               </View>
             </GlassCard>
           );
@@ -121,100 +125,107 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070A14',
+    backgroundColor: '#FFFFFF',
   },
-  topHeader: {
-    margin: 16,
-    marginBottom: 10,
-  },
-  headerRow: {
+  actionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  titleGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#F8FAFC',
-  },
-  badgeChip: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.4)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  badgeText: {
-    color: '#F87171',
-    fontSize: 11,
+    fontSize: 16,
     fontWeight: '700',
+    color: '#171717',
   },
-  actionsRow: {
+  actionRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
   },
-  actionText: {
-    fontSize: 13,
-    color: '#818CF8',
-    fontWeight: '700',
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  actionBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#5B5CE2',
   },
   listContent: {
     padding: 16,
     paddingBottom: 40,
   },
-  emptyState: {
+  emptyCard: {
+    padding: 32,
     alignItems: 'center',
-    paddingVertical: 48,
   },
-  emptyText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: '#94A3B8',
+  emptyTitle: {
+    color: '#171717',
+    fontSize: 15,
+    fontWeight: '600',
+    marginTop: 8,
   },
-  card: {
+  emptySub: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  notifCard: {
     marginBottom: 10,
   },
   unreadCard: {
-    borderColor: 'rgba(99, 102, 241, 0.5)',
-    backgroundColor: 'rgba(24, 34, 56, 0.85)',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#C7D2FE',
   },
-  cardContent: {
+  cardRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   notifTitle: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#F8FAFC',
+    fontWeight: '600',
+    color: '#171717',
   },
-  notifMessage: {
+  unreadTitle: {
+    color: '#5B5CE2',
+    fontWeight: '700',
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#5B5CE2',
+  },
+  messageText: {
     fontSize: 12,
-    color: '#CBD5E1',
+    color: '#6B7280',
     marginTop: 2,
   },
   timeText: {
     fontSize: 10,
-    color: '#64748B',
+    color: '#9CA3AF',
     marginTop: 4,
   },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#818CF8',
+  deleteBtn: {
+    padding: 4,
+    marginLeft: 6,
   },
 });
