@@ -16,8 +16,10 @@ import { useNotificationStore } from '../../../store/useNotificationStore';
 import RemindlyLogo from '../../../components/RemindlyLogo';
 import GlassCard from '../../../components/GlassCard';
 import GlassButton from '../../../components/GlassButton';
+import GlassModal from '../../../components/GlassModal';
 import AddReminderModal from '../../../components/AddReminderModal';
 import { confirmDelete } from '../../../utils/confirmDelete';
+import { formatCleanName } from '../../../utils/formatName';
 import { GenericReminder, ReminderType } from '../../../types';
 
 type DashboardTab = 'all' | 'today' | 'upcoming' | 'overdue' | 'recurring';
@@ -27,12 +29,13 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>('all');
   const [modalVisible, setModalVisible] = useState(false);
+  const [demoNoticeVisible, setDemoNoticeVisible] = useState(false);
   const [modalInitialType, setModalInitialType] = useState<ReminderType>('task');
   const [editingReminder, setEditingReminder] = useState<GenericReminder | null>(null);
 
-  const user = useAuthStore((state) => state.user);
+  const { user, isDemoMode } = useAuthStore();
   const {
-    reminders,
+    getUserReminders,
     toggleComplete,
     deleteReminder,
     getTodayReminders,
@@ -40,6 +43,8 @@ export default function DashboardScreen() {
     getOverdueReminders,
     getRecurringReminders,
   } = useReminderStore();
+
+  const userReminders = getUserReminders();
 
   const { getTotalMonthlySpend } = useSubscriptionStore();
   const unreadNotifs = useNotificationStore((state) => state.unreadCount);
@@ -66,30 +71,50 @@ export default function DashboardScreen() {
       case 'recurring':
         return recurringReminders;
       default:
-        return reminders;
+        return userReminders;
     }
   };
 
   const currentList = getFilteredList();
 
+  const handleProtectedAction = (action: () => void) => {
+    if (isDemoMode) {
+      setDemoNoticeVisible(true);
+      return;
+    }
+    action();
+  };
+
   const openCreate = (t: ReminderType = 'task') => {
-    setEditingReminder(null);
-    setModalInitialType(t);
-    setModalVisible(true);
-  };
-
-  const openEdit = (rem: GenericReminder) => {
-    setEditingReminder(rem);
-    setModalVisible(true);
-  };
-
-  const handleDelete = (id: string, title: string) => {
-    confirmDelete('Delete Reminder', `Delete "${title}"?`, () => {
-      deleteReminder(id);
+    handleProtectedAction(() => {
+      setEditingReminder(null);
+      setModalInitialType(t);
+      setModalVisible(true);
     });
   };
 
-  const formattedName = user?.name ? user.name.split('@')[0] : 'Dilhorayashvi';
+  const openEdit = (rem: GenericReminder) => {
+    handleProtectedAction(() => {
+      setEditingReminder(rem);
+      setModalVisible(true);
+    });
+  };
+
+  const handleDelete = (id: string, title: string) => {
+    handleProtectedAction(() => {
+      confirmDelete('Delete Reminder', `Delete "${title}"?`, () => {
+        deleteReminder(id);
+      });
+    });
+  };
+
+  const handleToggleCheck = (id: string) => {
+    handleProtectedAction(() => {
+      toggleComplete(id);
+    });
+  };
+
+  const formattedName = formatCleanName(user?.name, user?.email);
 
   return (
     <View style={styles.container}>
@@ -97,12 +122,33 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#5B5CE2" />}
       >
-        {/* Professional Minimal Mobile Header */}
+        {/* Read-Only Demo Showcase Banner */}
+        {isDemoMode && (
+          <GlassCard style={styles.demoBanner}>
+            <View style={styles.demoRow}>
+              <Ionicons name="sparkles" size={18} color="#5B5CE2" />
+              <View style={{ flex: 1, marginLeft: 8 }}>
+                <Text style={styles.demoTitle}>✨ Product Showcase Mode (Read-Only)</Text>
+                <Text style={styles.demoSub}>
+                  Sign in or create an account to create, edit, or delete reminders.
+                </Text>
+              </View>
+              <GlassButton
+                title="Sign In"
+                onPress={() => router.push('/(auth)/login')}
+                variant="primary"
+                style={{ height: 32, paddingHorizontal: 12 }}
+              />
+            </View>
+          </GlassCard>
+        )}
+
+        {/* Minimal Mobile Header */}
         <View style={styles.headerRow}>
           <View style={styles.headerTitleGroup}>
-            <RemindlyLogo size={38} showBackground={true} />
+            <RemindlyLogo size={42} showBackground={true} />
             <View style={{ marginLeft: 10 }}>
-              <Text style={styles.headerTitle}>Daily Organizer</Text>
+              <Text style={styles.headerTitle}>Daily Organizer </Text>
               <Text style={styles.headerSubtitle}>Hi, {formattedName}</Text>
             </View>
           </View>
@@ -126,7 +172,7 @@ export default function DashboardScreen() {
               <Text style={styles.summaryLabel}>Monthly subscriptions</Text>
               <Ionicons name="card-outline" size={16} color="#5B5CE2" />
             </View>
-            <Text style={styles.summaryValue}>${monthlyTotal > 0 ? monthlyTotal.toFixed(2) : '90.27'}</Text>
+            <Text style={styles.summaryValue}>${monthlyTotal.toFixed(2)}</Text>
           </View>
 
           <View style={styles.summaryCard}>
@@ -204,7 +250,7 @@ export default function DashboardScreen() {
             return (
               <GlassCard key={rem.id} style={[styles.itemCard, isOverdue && styles.overdueCard]}>
                 <View style={styles.itemRow}>
-                  <TouchableOpacity onPress={() => toggleComplete(rem.id)} style={styles.checkBtn}>
+                  <TouchableOpacity onPress={() => handleToggleCheck(rem.id)} style={styles.checkBtn}>
                     <Ionicons
                       name={isCompleted ? 'checkmark-circle' : 'ellipse-outline'}
                       size={22}
@@ -253,6 +299,43 @@ export default function DashboardScreen() {
         initialType={modalInitialType}
         editingReminder={editingReminder}
       />
+
+      {/* Demo Showcase Notice Modal */}
+      <GlassModal
+        visible={demoNoticeVisible}
+        onClose={() => setDemoNoticeVisible(false)}
+        title="Demo Showcase Mode"
+      >
+        <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+          <Ionicons name="lock-closed-outline" size={40} color="#5B5CE2" style={{ marginBottom: 10 }} />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#171717', marginBottom: 6 }}>
+            Read-Only Product Preview
+          </Text>
+          <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', marginBottom: 18, lineHeight: 18 }}>
+            Explore Demo Mode is a product showcase. To add, edit, or delete reminders, please sign in or create your free account!
+          </Text>
+
+          <GlassButton
+            title="Sign In to Your Account"
+            onPress={() => {
+              setDemoNoticeVisible(false);
+              router.push('/(auth)/login');
+            }}
+            variant="primary"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+
+          <GlassButton
+            title="Create Free Account"
+            onPress={() => {
+              setDemoNoticeVisible(false);
+              router.push('/(auth)/register');
+            }}
+            variant="secondary"
+            style={{ width: '100%' }}
+          />
+        </View>
+      </GlassModal>
     </View>
   );
 }
@@ -261,13 +344,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+    width: '100%',
   },
   content: {
     padding: 16,
     paddingBottom: 40,
-    maxWidth: 600,
     width: '100%',
-    alignSelf: 'center',
+  },
+  demoBanner: {
+    marginBottom: 14,
+    backgroundColor: '#EEF2FF',
+    borderColor: '#C7D2FE',
+    padding: 10,
+  },
+  demoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  demoTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#5B5CE2',
+  },
+  demoSub: {
+    fontSize: 11,
+    color: '#4B5563',
+    marginTop: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -325,7 +427,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   summaryCard: {
-    width: '48%',
+    flex: 1,
+    minWidth: 150,
     backgroundColor: '#F7F8FA',
     borderRadius: 12,
     borderWidth: 1,

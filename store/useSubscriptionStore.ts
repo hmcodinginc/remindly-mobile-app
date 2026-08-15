@@ -3,11 +3,12 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import pb from '../services/pocketbase';
 import { Subscription } from '../types';
+import { useAuthStore } from './useAuthStore';
 
-const INITIAL_MOCK_SUBSCRIPTIONS: Subscription[] = [
+export const DEMO_SHOWCASE_SUBSCRIPTIONS: Subscription[] = [
   {
     id: 'sub-1',
-    user: 'user-1',
+    user: 'demo-user-1',
     name: 'Netflix Premium',
     amount: 19.99,
     currency: '$',
@@ -23,7 +24,7 @@ const INITIAL_MOCK_SUBSCRIPTIONS: Subscription[] = [
   },
   {
     id: 'sub-2',
-    user: 'user-1',
+    user: 'demo-user-1',
     name: 'Spotify Family',
     amount: 16.99,
     currency: '$',
@@ -39,7 +40,7 @@ const INITIAL_MOCK_SUBSCRIPTIONS: Subscription[] = [
   },
   {
     id: 'sub-3',
-    user: 'user-1',
+    user: 'demo-user-1',
     name: 'GitHub Pro',
     amount: 4.00,
     currency: '$',
@@ -55,7 +56,7 @@ const INITIAL_MOCK_SUBSCRIPTIONS: Subscription[] = [
   },
   {
     id: 'sub-4',
-    user: 'user-1',
+    user: 'demo-user-1',
     name: 'iCloud+ 200GB',
     amount: 2.99,
     currency: '$',
@@ -86,40 +87,58 @@ interface SubscriptionState {
   setSearchQuery: (query: string) => void;
   setSelectedCategory: (category: string | null) => void;
 
-  // Computed / Helpers
+  // Computed / Helpers (Strictly user-isolated)
+  getUserSubscriptions: () => Subscription[];
   getTotalMonthlySpend: () => number;
   getUpcomingRenewals: (daysLimit?: number) => Subscription[];
+  clearUserSubscriptions: () => void;
 }
 
 export const useSubscriptionStore = create<SubscriptionState>()(
   persist(
     (set, get) => ({
-      subscriptions: INITIAL_MOCK_SUBSCRIPTIONS,
+      subscriptions: [],
       isLoading: false,
       searchQuery: '',
       selectedCategory: null,
       error: null,
 
       fetchSubscriptions: async () => {
+        const { user, isDemoMode } = useAuthStore.getState();
+        if (isDemoMode) {
+          set({ subscriptions: DEMO_SHOWCASE_SUBSCRIPTIONS, isLoading: false });
+          return;
+        }
+
+        if (!user) {
+          set({ subscriptions: [], isLoading: false });
+          return;
+        }
+
         set({ isLoading: true, error: null });
         try {
           if (pb.authStore.isValid) {
-            const records = await pb.collection('subscriptions').getFullList({ sort: 'renewal_date' });
-            if (records.length > 0) {
-              set({ subscriptions: records as unknown as Subscription[], isLoading: false });
-              return;
-            }
+            const records = await pb.collection('subscriptions').getFullList({
+              filter: `user = "${user.id}"`,
+              sort: 'renewal_date',
+            });
+            set({ subscriptions: records as unknown as Subscription[], isLoading: false });
+          } else {
+            set({ isLoading: false });
           }
-          set({ isLoading: false });
         } catch (e: any) {
-          console.warn('PocketBase fetchSubscriptions error (using local store):', e?.message);
+          console.warn('PocketBase fetchSubscriptions error (using local state):', e?.message);
           set({ isLoading: false });
         }
       },
 
       addSubscription: async (subData) => {
+        const { user } = useAuthStore.getState();
+        const userId = user?.id || subData.user || 'user-1';
+
         const newSub: Subscription = {
           ...subData,
+          user: userId,
           id: 'sub-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
           created: new Date().toISOString(),
           updated: new Date().toISOString(),
@@ -127,9 +146,9 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
         set((state) => ({ subscriptions: [newSub, ...state.subscriptions] }));
 
-        if (pb.authStore.isValid) {
+        if (pb.authStore.isValid && user && !user.id.startsWith('demo-')) {
           try {
-            const rec = await pb.collection('subscriptions').create(subData);
+            const rec = await pb.collection('subscriptions').create({ ...subData, user: user.id });
             set((state) => ({
               subscriptions: state.subscriptions.map((s) => (s.id === newSub.id ? (rec as unknown as Subscription) : s)),
             }));
@@ -174,20 +193,29 @@ export const useSubscriptionStore = create<SubscriptionState>()(
 
       setSearchQuery: (query) => set({ searchQuery: query }),
       setSelectedCategory: (category) => set({ selectedCategory: category }),
+      clearUserSubscriptions: () => set({ subscriptions: [] }),
+
+      getUserSubscriptions: () => {
+        const { user, isDemoMode } = useAuthStore.getState();
+        if (isDemoMode) return DEMO_SHOWCASE_SUBSCRIPTIONS;
+        if (!user) return [];
+        return get().subscriptions.filter((s) => s.user === user.id || !s.user);
+      },
 
       getTotalMonthlySpend: () => {
-        const subs = get().subscriptions.filter((s) => s.status === 'active');
+        const subs = get().getUserSubscriptions().filter((s) => s.status !== 'cancelled');
         return subs.reduce((total, sub) => {
-          if (sub.billing_cycle === 'monthly') return total + sub.amount;
-          if (sub.billing_cycle === 'yearly') return total + sub.amount / 12;
-          if (sub.billing_cycle === 'weekly') return total + sub.amount * 4.33;
-          if (sub.billing_cycle === 'quarterly') return total + sub.amount / 3;
-          return total + sub.amount;
+          const amt = Number(sub.amount) || 0;
+          if (sub.billing_cycle === 'monthly') return total + amt;
+          if (sub.billing_cycle === 'yearly') return total + amt / 12;
+          if (sub.billing_cycle === 'weekly') return total + amt * 4.33;
+          if (sub.billing_cycle === 'quarterly') return total + amt / 3;
+          return total + amt;
         }, 0);
       },
 
       getUpcomingRenewals: (daysLimit = 14) => {
-        const subs = get().subscriptions.filter((s) => s.status === 'active');
+        const subs = get().getUserSubscriptions().filter((s) => s.status === 'active');
         const now = new Date();
         const limitDate = new Date();
         limitDate.setDate(now.getDate() + daysLimit);

@@ -17,6 +17,7 @@ import GlassInput from '../../../components/GlassInput';
 import GlassButton from '../../../components/GlassButton';
 import { confirmAction } from '../../../utils/confirmDelete';
 import { openRealEmailApp } from '../../../utils/emailDispatcher';
+import { formatCleanName } from '../../../utils/formatName';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -80,21 +81,17 @@ export default function ProfileScreen() {
     setConfirmPassword('');
   };
 
-  const handleLogout = () => {
-    confirmAction(
-      'Sign Out',
-      'Are you sure you want to sign out of Remindly?',
-      async () => {
-        await logout();
-        router.replace('/(auth)/login');
-      },
-      'Sign Out'
-    );
+  const handleLogout = async () => {
+    await logout();
+    router.replace('/(auth)/login');
   };
 
-  const userInitials = user?.name
-    ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase()
-    : 'RM';
+  const displayName = formatCleanName(user?.name, user?.email);
+  const userInitials = displayName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -119,33 +116,10 @@ export default function ProfileScreen() {
           </View>
 
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={styles.userName}>{user?.name || 'User'}</Text>
+            <Text style={styles.userName}>{displayName}</Text>
             <Text style={styles.userEmail}>{user?.email || 'user@remindly.app'}</Text>
-
-            <View style={styles.badgeRow}>
-              <View style={[styles.verifiedBadge, user?.emailVerified ? styles.badgeGreen : styles.badgeAmber]}>
-                <Ionicons
-                  name={user?.emailVerified ? 'checkmark-circle' : 'alert-circle'}
-                  size={12}
-                  color={user?.emailVerified ? '#16A34A' : '#D97706'}
-                />
-                <Text style={[styles.badgeText, { color: user?.emailVerified ? '#16A34A' : '#D97706' }]}>
-                  {user?.emailVerified ? 'Verified Email' : 'Unverified Email'}
-                </Text>
-              </View>
-            </View>
           </View>
         </View>
-
-        {!user?.emailVerified && (
-          <GlassButton
-            title="Send Email Verification Link"
-            onPress={handleVerifyEmail}
-            variant="secondary"
-            icon="mail-outline"
-            style={{ marginTop: 14 }}
-          />
-        )}
       </GlassCard>
 
       {/* Notification Preferences */}
@@ -226,9 +200,6 @@ export default function ProfileScreen() {
         style={styles.logoutBtn}
       />
 
-      <Text style={styles.versionText}>
-        Remindly Mobile v1.0.0 • Clean White Design
-      </Text>
 
       {/* Change Password Modal */}
       <GlassModal
@@ -308,9 +279,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
-    maxWidth: 600,
     width: '100%',
-    alignSelf: 'center',
   },
   messageCard: {
     marginBottom: 14,
