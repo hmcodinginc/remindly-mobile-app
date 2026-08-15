@@ -15,10 +15,12 @@ import RemindlyLogo from '../../components/RemindlyLogo';
 import GlassCard from '../../components/GlassCard';
 import GlassInput from '../../components/GlassInput';
 import GlassButton from '../../components/GlassButton';
+import { sanitizeNameInput } from '../../utils/formatName';
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,10 +29,22 @@ export default function RegisterScreen() {
 
   const { register, isLoading, error, clearError } = useAuthStore();
 
+  const handleFirstNameChange = (t: string) => {
+    setFirstName(sanitizeNameInput(t));
+  };
+
+  const handleLastNameChange = (t: string) => {
+    setLastName(sanitizeNameInput(t));
+  };
+
   const handleRegister = async () => {
     setLocalError(null);
     clearError();
 
+    if (!firstName.trim() || !lastName.trim()) {
+      setLocalError('Please enter both First Name and Last Name.');
+      return;
+    }
     if (!email || !password || !confirmPassword) {
       setLocalError('Please fill in all required fields.');
       return;
@@ -44,7 +58,8 @@ export default function RegisterScreen() {
       return;
     }
 
-    const success = await register(email.trim(), password, confirmPassword, name.trim());
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+    const success = await register(email.trim(), password, confirmPassword, fullName);
     if (success) {
       router.replace('/(tabs)/dashboard');
     }
@@ -59,37 +74,51 @@ export default function RegisterScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#F8FAFC" />
+          <Ionicons name="arrow-back" size={20} color="#171717" />
         </TouchableOpacity>
 
         <View style={styles.header}>
           <View style={styles.logoWrapper}>
-            <RemindlyLogo size={70} />
+            <RemindlyLogo size={64} showBackground={false} />
           </View>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>
-            Join Remindly to manage subscriptions & track daily habits
+            Join Remindly to manage subscriptions & reminders
           </Text>
         </View>
 
-        <GlassCard glow style={styles.card}>
+        <GlassCard style={styles.card}>
           {displayError && (
             <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={18} color="#F87171" />
+              <Ionicons name="alert-circle" size={18} color="#EF4444" />
               <Text style={styles.errorText}>{displayError}</Text>
             </View>
           )}
 
-          <GlassInput
-            label="Full Name"
-            placeholder="Alex Johnson"
-            value={name}
-            onChangeText={setName}
-            iconName="person-outline"
-          />
+          {/* First Name & Last Name Inputs (No numbers allowed) */}
+          <View style={styles.nameRow}>
+            <View style={{ flex: 1 }}>
+              <GlassInput
+                label="First Name *"
+                placeholder="Alex"
+                value={firstName}
+                onChangeText={handleFirstNameChange}
+                iconName="person-outline"
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <GlassInput
+                label="Last Name *"
+                placeholder="Johnson"
+                value={lastName}
+                onChangeText={handleLastNameChange}
+                iconName="person-outline"
+              />
+            </View>
+          </View>
 
           <GlassInput
-            label="Email Address"
+            label="Email Address *"
             placeholder="name@example.com"
             value={email}
             onChangeText={(t) => {
@@ -103,7 +132,7 @@ export default function RegisterScreen() {
           />
 
           <GlassInput
-            label="Password (min 8 chars)"
+            label="Password (min 8 chars) *"
             placeholder="••••••••"
             value={password}
             onChangeText={(t) => {
@@ -118,7 +147,7 @@ export default function RegisterScreen() {
           />
 
           <GlassInput
-            label="Confirm Password"
+            label="Confirm Password *"
             placeholder="••••••••"
             value={confirmPassword}
             onChangeText={(t) => {
@@ -153,7 +182,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070A14',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
@@ -165,66 +194,71 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     marginBottom: 16,
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F7F8FA',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   logoWrapper: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#F8FAFC',
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#171717',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 4,
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
     textAlign: 'center',
   },
   card: {
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  nameRow: {
+    flexDirection: 'row',
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderColor: '#FCA5A5',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 14,
     gap: 8,
   },
   errorText: {
-    color: '#F87171',
+    color: '#EF4444',
     fontSize: 13,
     flex: 1,
   },
   registerBtn: {
-    marginTop: 8,
+    marginTop: 6,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 12,
+    marginTop: 8,
   },
   footerText: {
-    fontSize: 14,
-    color: '#94A3B8',
+    fontSize: 13,
+    color: '#6B7280',
   },
   signInText: {
-    fontSize: 14,
-    color: '#818CF8',
+    fontSize: 13,
+    color: '#5B5CE2',
     fontWeight: '700',
   },
 });

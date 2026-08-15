@@ -6,7 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '../../../store/useAuthStore';
 import { useTaskStore, isTaskOverdue } from '../../../store/useTaskStore';
 import { useNotificationStore } from '../../../store/useNotificationStore';
 import { scheduleOverdueTaskAlert } from '../../../services/notifications';
@@ -29,7 +31,7 @@ const STATUS_FILTERS: Array<{ label: string; value: 'all' | 'pending' | 'overdue
 
 export default function TasksScreen() {
   const {
-    tasks,
+    getUserTasks,
     searchQuery,
     selectedStatus,
     setSearchQuery,
@@ -41,7 +43,12 @@ export default function TasksScreen() {
     toggleTaskStatus,
   } = useTaskStore();
 
+  const tasks = getUserTasks();
+
   const addNotification = useNotificationStore((state) => state.addNotification);
+
+  // Expanded Accordion State
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
 
   // Modal State
   const [modalVisible, setModalVisible] = useState(false);
@@ -53,22 +60,42 @@ export default function TasksScreen() {
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [dueDate, setDueDate] = useState('2026-08-20');
 
+  const router = useRouter();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
+  const [demoNoticeVisible, setDemoNoticeVisible] = useState(false);
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleProtectedAction = (action: () => void) => {
+    if (isDemoMode) {
+      setDemoNoticeVisible(true);
+      return;
+    }
+    action();
+  };
+
   const openCreateModal = () => {
-    setEditingTask(null);
-    setTitle('');
-    setDescription('');
-    setPriority('medium');
-    setDueDate(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
-    setModalVisible(true);
+    handleProtectedAction(() => {
+      setEditingTask(null);
+      setTitle('');
+      setDescription('');
+      setPriority('medium');
+      setDueDate(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
+      setModalVisible(true);
+    });
   };
 
   const openEditModal = (t: Task) => {
-    setEditingTask(t);
-    setTitle(t.title);
-    setDescription(t.description || '');
-    setPriority(t.priority);
-    setDueDate(t.due_date);
-    setModalVisible(true);
+    handleProtectedAction(() => {
+      setEditingTask(t);
+      setTitle(t.title);
+      setDescription(t.description || '');
+      setPriority(t.priority);
+      setDueDate(t.due_date);
+      setModalVisible(true);
+    });
   };
 
   const handleSave = async () => {
@@ -109,8 +136,10 @@ export default function TasksScreen() {
   };
 
   const handleDelete = (id: string, taskTitle: string) => {
-    confirmDelete('Delete Task', `Are you sure you want to delete "${taskTitle}"?`, async () => {
-      await deleteTask(id);
+    handleProtectedAction(() => {
+      confirmDelete('Delete Task', `Are you sure you want to delete "${taskTitle}"?`, async () => {
+        await deleteTask(id);
+      });
     });
   };
 
@@ -159,9 +188,9 @@ export default function TasksScreen() {
         </GlassCard>
       )}
 
-      {/* Header Bar */}
+      {/* Header Bar - Perfectly Aligned Search & Add Task Button */}
       <View style={styles.headerBar}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.searchInputWrapper}>
           <GlassInput
             placeholder="Search reminders & tasks..."
             value={searchQuery}
@@ -169,13 +198,14 @@ export default function TasksScreen() {
             iconName="search-outline"
             rightIcon={searchQuery ? 'close-circle' : undefined}
             onRightIconPress={() => setSearchQuery('')}
+            containerStyle={{ marginBottom: 0 }}
           />
         </View>
         <GlassButton
           title="+ Task"
           onPress={openCreateModal}
           variant="primary"
-          style={{ marginLeft: 10, height: 46 }}
+          style={styles.addTaskBtn}
         />
       </View>
 
@@ -197,7 +227,7 @@ export default function TasksScreen() {
         })}
       </View>
 
-      {/* Task List */}
+      {/* Task List with Expandable Description Accordion */}
       <FlatList
         data={filteredTasks}
         keyExtractor={(item) => item.id}
@@ -211,6 +241,7 @@ export default function TasksScreen() {
         renderItem={({ item }) => {
           const overdue = isTaskOverdue(item);
           const pStyle = PriorityColors[item.priority];
+          const isExpanded = !!expandedIds[item.id];
 
           return (
             <GlassCard style={[styles.taskCard, overdue && styles.taskCardOverdue]}>
@@ -218,21 +249,15 @@ export default function TasksScreen() {
                 <TouchableOpacity onPress={() => toggleTaskStatus(item.id)} style={styles.checkBtn}>
                   <Ionicons
                     name={item.status === 'completed' ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={22}
+                    size={24}
                     color={item.status === 'completed' ? '#16A34A' : overdue ? '#DC2626' : '#9CA3AF'}
                   />
                 </TouchableOpacity>
 
-                <View style={{ flex: 1, marginLeft: 10 }}>
+                <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={[styles.taskTitle, item.status === 'completed' && styles.completedTitle]}>
                     {item.title}
                   </Text>
-
-                  {item.description ? (
-                    <Text style={styles.taskDesc} numberOfLines={2}>
-                      {item.description}
-                    </Text>
-                  ) : null}
 
                   <View style={styles.metaRow}>
                     <Text style={[styles.dateText, overdue && { color: '#DC2626', fontWeight: '700' }]}>
@@ -247,12 +272,18 @@ export default function TasksScreen() {
                   </View>
                 </View>
 
+                {/* Right Action Icons & Expand Dropdown Toggle */}
                 <View style={styles.actionsCol}>
-                  {overdue && (
-                    <TouchableOpacity style={styles.iconBtn} onPress={() => triggerOverdueAlert(item)}>
-                      <Ionicons name="notifications-outline" size={18} color="#D97706" />
+                  {item.description ? (
+                    <TouchableOpacity style={styles.expandBtn} onPress={() => toggleExpand(item.id)}>
+                      <Text style={styles.expandLabel}>Details</Text>
+                      <Ionicons
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={18}
+                        color="#5B5CE2"
+                      />
                     </TouchableOpacity>
-                  )}
+                  ) : null}
 
                   <TouchableOpacity style={styles.iconBtn} onPress={() => openEditModal(item)}>
                     <Ionicons name="pencil" size={18} color="#5B5CE2" />
@@ -263,6 +294,17 @@ export default function TasksScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
+
+              {/* Expandable Full Description Dropdown Section */}
+              {isExpanded && item.description ? (
+                <View style={styles.expandedDescContainer}>
+                  <View style={styles.descHeader}>
+                    <Ionicons name="document-text-outline" size={16} color="#5B5CE2" />
+                    <Text style={styles.descTitle}>Full Description & Details</Text>
+                  </View>
+                  <Text style={styles.expandedDescText}>{item.description}</Text>
+                </View>
+              ) : null}
             </GlassCard>
           );
         }}
@@ -318,6 +360,43 @@ export default function TasksScreen() {
           style={{ marginTop: 10 }}
         />
       </GlassModal>
+
+      {/* Demo Showcase Notice Modal */}
+      <GlassModal
+        visible={demoNoticeVisible}
+        onClose={() => setDemoNoticeVisible(false)}
+        title="Demo Showcase Mode"
+      >
+        <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+          <Ionicons name="lock-closed-outline" size={40} color="#5B5CE2" style={{ marginBottom: 10 }} />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#171717', marginBottom: 6 }}>
+            Read-Only Product Preview
+          </Text>
+          <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', marginBottom: 18, lineHeight: 18 }}>
+            Explore Demo Mode is a product showcase. To add, edit, or delete tasks, please sign in or create your free account!
+          </Text>
+
+          <GlassButton
+            title="Sign In to Your Account"
+            onPress={() => {
+              setDemoNoticeVisible(false);
+              router.push('/(auth)/login');
+            }}
+            variant="primary"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+
+          <GlassButton
+            title="Create Free Account"
+            onPress={() => {
+              setDemoNoticeVisible(false);
+              router.push('/(auth)/register');
+            }}
+            variant="secondary"
+            style={{ width: '100%' }}
+          />
+        </View>
+      </GlassModal>
     </View>
   );
 }
@@ -344,19 +423,29 @@ const styles = StyleSheet.create({
   },
   headerBar: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 12,
-    alignItems: 'center',
+    paddingBottom: 10,
+    gap: 10,
+  },
+  searchInputWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  addTaskBtn: {
+    height: 48,
+    paddingHorizontal: 18,
   },
   filterRow: {
     flexDirection: 'row',
     gap: 8,
     paddingHorizontal: 16,
-    paddingBottom: 10,
+    paddingBottom: 12,
   },
   filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 8,
     backgroundColor: '#F3F4F6',
     borderWidth: 1,
@@ -367,7 +456,7 @@ const styles = StyleSheet.create({
     borderColor: '#5B5CE2',
   },
   filterChipText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#6B7280',
     fontWeight: '500',
   },
@@ -385,11 +474,12 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 8,
-    fontSize: 13,
+    fontSize: 14,
     color: '#6B7280',
   },
   taskCard: {
-    marginBottom: 10,
+    marginBottom: 12,
+    padding: 14,
   },
   taskCardOverdue: {
     backgroundColor: '#FEF2F2',
@@ -400,47 +490,85 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkBtn: {
-    padding: 2,
+    padding: 4,
   },
   taskTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#171717',
+    letterSpacing: -0.2,
   },
   completedTitle: {
     textDecorationLine: 'line-through',
     color: '#9CA3AF',
   },
-  taskDesc: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 2,
-  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
+    gap: 10,
+    marginTop: 5,
   },
   dateText: {
-    fontSize: 11,
-    color: '#6B7280',
+    fontSize: 12.5,
+    color: '#4B5563',
+    fontWeight: '500',
   },
   priorityBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
     borderWidth: 1,
   },
   priorityText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
   },
   actionsCol: {
-    gap: 6,
-    marginLeft: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 10,
+  },
+  expandBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 2,
+  },
+  expandLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#5B5CE2',
   },
   iconBtn: {
-    padding: 4,
+    padding: 5,
+  },
+  expandedDescContainer: {
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 10,
+  },
+  descHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  descTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#5B5CE2',
+  },
+  expandedDescText: {
+    fontSize: 13.5,
+    color: '#374151',
+    lineHeight: 20,
   },
 });

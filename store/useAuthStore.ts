@@ -3,11 +3,16 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import pb, { hydrateAuth } from '../services/pocketbase';
 import { User, UserSettings } from '../types';
+import { openRealEmailApp } from '../utils/emailDispatcher';
+import { useSubscriptionStore } from './useSubscriptionStore';
+import { useTaskStore } from './useTaskStore';
+import { useReminderStore } from './useReminderStore';
 
 interface AuthState {
   user: User | null;
   settings: UserSettings;
   isAuthenticated: boolean;
+  isDemoMode: boolean;
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
@@ -51,6 +56,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       settings: defaultSettings,
       isAuthenticated: false,
+      isDemoMode: false,
       isLoading: false,
       isInitialized: false,
       error: null,
@@ -65,6 +71,7 @@ export const useAuthStore = create<AuthState>()(
             set({
               user: pb.authStore.record as unknown as User,
               isAuthenticated: true,
+              isDemoMode: false,
               isInitialized: true,
               isLoading: false,
             });
@@ -74,8 +81,11 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
             });
           } else {
-            // Auto login as demo user for instant interactive demonstration if no active user
-            get().loginAsDemo();
+            // Default to unauthenticated initial state so user can log in or explore demo
+            set({
+              isInitialized: true,
+              isLoading: false,
+            });
           }
         } catch (err: any) {
           set({
@@ -92,6 +102,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             user: authData.record as unknown as User,
             isAuthenticated: true,
+            isDemoMode: false,
             isLoading: false,
           });
           return true;
@@ -108,6 +119,7 @@ export const useAuthStore = create<AuthState>()(
             set({
               user: localUser,
               isAuthenticated: true,
+              isDemoMode: false,
               isLoading: false,
             });
             return true;
@@ -121,8 +133,8 @@ export const useAuthStore = create<AuthState>()(
       loginAsDemo: () => {
         const demoUser: User = {
           id: 'demo-user-1',
-          email: 'alex.remindly@example.com',
-          name: 'Alex Johnson',
+          email: 'demo.showcase@remindly.app',
+          name: 'Demo Visitor',
           emailVerified: true,
           created: new Date().toISOString(),
           updated: new Date().toISOString(),
@@ -130,6 +142,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: demoUser,
           isAuthenticated: true,
+          isDemoMode: true, // Read-only showcase demo mode!
           isLoading: false,
           isInitialized: true,
           error: null,
@@ -147,6 +160,13 @@ export const useAuthStore = create<AuthState>()(
             name: name || email.split('@')[0],
           });
 
+          // Dispatch Welcome Email Link to user's registered email
+          await openRealEmailApp(
+            email,
+            'Welcome to Remindly - Account Confirmation',
+            `Hello ${name || 'User'},\n\nWelcome to Remindly! Your account (${email}) has been successfully created.\n\nClick the link below to verify your email address:\nhttps://remindly.app/verify?email=${encodeURIComponent(email)}`
+          );
+
           return await get().login(email, pass);
         } catch (err: any) {
           if (err?.status === 0 || err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
@@ -158,11 +178,19 @@ export const useAuthStore = create<AuthState>()(
               created: new Date().toISOString(),
               updated: new Date().toISOString(),
             };
+
+            await openRealEmailApp(
+              email,
+              'Welcome to Remindly - Account Confirmation',
+              `Hello ${name || 'User'},\n\nWelcome to Remindly! Your account (${email}) has been successfully created.\n\nClick the link below to verify your email address:\nhttps://remindly.app/verify?email=${encodeURIComponent(email)}`
+            );
+
             set({
               user: localUser,
               isAuthenticated: true,
+              isDemoMode: false,
               isLoading: false,
-              message: 'Account created! Verification link sent to ' + email,
+              message: 'Account created! Welcome verification link sent to ' + email,
             });
             return true;
           }
@@ -176,18 +204,22 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null, message: null });
         try {
           await pb.collection('users').requestPasswordReset(email);
-          set({
-            isLoading: false,
-            message: `Reset link dispatched for ${email}! Check your inbox or tap 'Open Gmail'.`,
-          });
-          return true;
         } catch (err: any) {
-          set({
-            isLoading: false,
-            message: `Reset link dispatched for ${email}! Check your inbox or tap 'Open Gmail'.`,
-          });
-          return true;
+          // Handled via local email dispatcher fallback below
         }
+
+        // Dispatch Password Reset link to user's specific email address
+        await openRealEmailApp(
+          email,
+          'Remindly - Password Reset Link',
+          `Hello,\n\nA password reset was requested for your Remindly account (${email}).\n\nClick the link below to set a new password:\nhttps://remindly.app/reset-password?email=${encodeURIComponent(email)}`
+        );
+
+        set({
+          isLoading: false,
+          message: `Password reset link dispatched for ${email}! Check your inbox or tap 'Open Gmail'.`,
+        });
+        return true;
       },
 
       changePassword: async (oldPass: string, newPass: string) => {
@@ -254,7 +286,10 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           pb.authStore.clear();
-          set({ user: null, isAuthenticated: false, error: null, message: null });
+          useSubscriptionStore.getState().clearUserSubscriptions();
+          useTaskStore.getState().clearUserTasks();
+          useReminderStore.getState().clearUserReminders();
+          set({ user: null, isAuthenticated: false, isDemoMode: false, error: null, message: null });
         } catch (err) {
           console.warn('Error during logout:', err);
         }
@@ -266,7 +301,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'remindly-auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated, settings: state.settings }),
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated, isDemoMode: state.isDemoMode, settings: state.settings }),
     }
   )
 );

@@ -6,7 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '../../../store/useAuthStore';
 import { useSubscriptionStore } from '../../../store/useSubscriptionStore';
 import { useNotificationStore } from '../../../store/useNotificationStore';
 import { scheduleOneWeekRenewalAlert } from '../../../services/notifications';
@@ -32,8 +34,9 @@ const ALERT_TIMING_OPTIONS = [
 ];
 
 export default function SubscriptionsScreen() {
+  const router = useRouter();
   const {
-    subscriptions,
+    getUserSubscriptions,
     searchQuery,
     selectedCategory,
     setSearchQuery,
@@ -43,6 +46,8 @@ export default function SubscriptionsScreen() {
     updateSubscription,
     deleteSubscription,
   } = useSubscriptionStore();
+
+  const subscriptions = getUserSubscriptions();
 
   const addNotification = useNotificationStore((state) => state.addNotification);
 
@@ -59,28 +64,43 @@ export default function SubscriptionsScreen() {
   const [renewalDate, setRenewalDate] = useState('2026-08-25');
   const [alertNoticeDays, setAlertNoticeDays] = useState('7');
 
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
+  const [demoNoticeVisible, setDemoNoticeVisible] = useState(false);
+
+  const handleProtectedAction = (action: () => void) => {
+    if (isDemoMode) {
+      setDemoNoticeVisible(true);
+      return;
+    }
+    action();
+  };
+
   const openCreateModal = () => {
-    setEditingSub(null);
-    setName('');
-    setAmount('');
-    setCurrency('$');
-    setCategory('Entertainment');
-    setCycle('monthly');
-    setRenewalDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
-    setAlertNoticeDays('7');
-    setModalVisible(true);
+    handleProtectedAction(() => {
+      setEditingSub(null);
+      setName('');
+      setAmount('');
+      setCurrency('$');
+      setCategory('Entertainment');
+      setCycle('monthly');
+      setRenewalDate(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
+      setAlertNoticeDays('7');
+      setModalVisible(true);
+    });
   };
 
   const openEditModal = (sub: Subscription) => {
-    setEditingSub(sub);
-    setName(sub.name);
-    setAmount(sub.amount.toString());
-    setCurrency(sub.currency);
-    setCategory(sub.category);
-    setCycle(sub.billing_cycle);
-    setRenewalDate(sub.renewal_date);
-    setAlertNoticeDays(sub.reminder_days_before?.toString() || '7');
-    setModalVisible(true);
+    handleProtectedAction(() => {
+      setEditingSub(sub);
+      setName(sub.name);
+      setAmount(sub.amount.toString());
+      setCurrency(sub.currency);
+      setCategory(sub.category);
+      setCycle(sub.billing_cycle);
+      setRenewalDate(sub.renewal_date);
+      setAlertNoticeDays(sub.reminder_days_before?.toString() || '7');
+      setModalVisible(true);
+    });
   };
 
   const handleSave = async () => {
@@ -129,13 +149,15 @@ export default function SubscriptionsScreen() {
   };
 
   const handleDelete = (id: string, name: string) => {
-    confirmDelete(
-      'Delete Subscription',
-      `Are you sure you want to delete ${name}?`,
-      async () => {
-        await deleteSubscription(id);
-      }
-    );
+    handleProtectedAction(() => {
+      confirmDelete(
+        'Delete Subscription',
+        `Are you sure you want to delete ${name}?`,
+        async () => {
+          await deleteSubscription(id);
+        }
+      );
+    });
   };
 
   const triggerTestAlert = async (sub: Subscription) => {
@@ -174,7 +196,7 @@ export default function SubscriptionsScreen() {
             <Text style={styles.bannerAmount}>${totalSpend.toFixed(2)}</Text>
           </View>
           <GlassButton
-            title="+ Add Subscription"
+            title="Add Subscription"
             onPress={openCreateModal}
             variant="primary"
             icon="add"
@@ -352,6 +374,43 @@ export default function SubscriptionsScreen() {
           variant="primary"
           style={{ marginTop: 10 }}
         />
+      </GlassModal>
+
+      {/* Demo Showcase Notice Modal */}
+      <GlassModal
+        visible={demoNoticeVisible}
+        onClose={() => setDemoNoticeVisible(false)}
+        title="Demo Showcase Mode"
+      >
+        <View style={{ alignItems: 'center', paddingVertical: 10 }}>
+          <Ionicons name="lock-closed-outline" size={40} color="#5B5CE2" style={{ marginBottom: 10 }} />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: '#171717', marginBottom: 6 }}>
+            Read-Only Product Preview
+          </Text>
+          <Text style={{ fontSize: 13, color: '#6B7280', textAlign: 'center', marginBottom: 18, lineHeight: 18 }}>
+            Explore Demo Mode is a product showcase. To add, edit, or delete subscriptions, please sign in or create your free account!
+          </Text>
+
+          <GlassButton
+            title="Sign In to Your Account"
+            onPress={() => {
+              setDemoNoticeVisible(false);
+              router.push('/(auth)/login');
+            }}
+            variant="primary"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+
+          <GlassButton
+            title="Create Free Account"
+            onPress={() => {
+              setDemoNoticeVisible(false);
+              router.push('/(auth)/register');
+            }}
+            variant="secondary"
+            style={{ width: '100%' }}
+          />
+        </View>
       </GlassModal>
     </View>
   );

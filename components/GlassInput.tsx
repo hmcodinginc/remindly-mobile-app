@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TextInput, Text, StyleSheet, TextInputProps, TouchableOpacity, Platform } from 'react-native';
+import { View, TextInput, Text, StyleSheet, TextInputProps, TouchableOpacity, Platform, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface GlassInputProps extends TextInputProps {
@@ -8,6 +8,7 @@ interface GlassInputProps extends TextInputProps {
   iconName?: keyof typeof Ionicons.glyphMap;
   rightIcon?: keyof typeof Ionicons.glyphMap;
   onRightIconPress?: () => void;
+  containerStyle?: ViewStyle;
 }
 
 export default function GlassInput({
@@ -18,10 +19,11 @@ export default function GlassInput({
   onRightIconPress,
   multiline,
   style,
+  containerStyle,
   ...props
 }: GlassInputProps) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <View
         style={[

@@ -2,11 +2,12 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GenericReminder, ReminderType } from '../types';
+import { useAuthStore } from './useAuthStore';
 
-const INITIAL_MOCK_REMINDERS: GenericReminder[] = [
+export const DEMO_SHOWCASE_REMINDERS: GenericReminder[] = [
   {
     id: 'rem-1',
-    user: 'user-1',
+    user: 'demo-user-1',
     title: 'Netflix Premium Subscription',
     type: 'subscription',
     category: 'Entertainment',
@@ -26,7 +27,7 @@ const INITIAL_MOCK_REMINDERS: GenericReminder[] = [
   },
   {
     id: 'rem-2',
-    user: 'user-1',
+    user: 'demo-user-1',
     title: 'Electricity & Utility Bill',
     type: 'payment',
     category: 'Bills',
@@ -44,11 +45,11 @@ const INITIAL_MOCK_REMINDERS: GenericReminder[] = [
   },
   {
     id: 'rem-3',
-    user: 'user-1',
+    user: 'demo-user-1',
     title: 'Car Oil Change & Vehicle Maintenance',
     type: 'renewal',
     category: 'Vehicle & Service',
-    due_date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Overdue sample
+    due_date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
     due_time: '10:00 AM',
     reminder_enabled: true,
     advance_notice_days: 7,
@@ -59,7 +60,7 @@ const INITIAL_MOCK_REMINDERS: GenericReminder[] = [
   },
   {
     id: 'rem-4',
-    user: 'user-1',
+    user: 'demo-user-1',
     title: 'Doctor Appointment & Health Check',
     type: 'appointment',
     category: 'Health',
@@ -89,24 +90,30 @@ interface ReminderState {
   setSelectedTypeFilter: (type: ReminderType | 'all') => void;
   setSelectedCategoryFilter: (cat: string | 'all') => void;
 
-  // Helpers
+  // Helpers (User-Isolated)
+  getUserReminders: () => GenericReminder[];
   getTodayReminders: () => GenericReminder[];
   getUpcomingReminders: (daysLimit?: number) => GenericReminder[];
   getOverdueReminders: () => GenericReminder[];
   getRecurringReminders: () => GenericReminder[];
+  clearUserReminders: () => void;
 }
 
 export const useReminderStore = create<ReminderState>()(
   persist(
     (set, get) => ({
-      reminders: INITIAL_MOCK_REMINDERS,
+      reminders: [],
       searchQuery: '',
       selectedTypeFilter: 'all',
       selectedCategoryFilter: 'all',
 
       addReminder: (remData) => {
+        const { user } = useAuthStore.getState();
+        const userId = user?.id || remData.user || 'user-1';
+
         const newRem: GenericReminder = {
           ...remData,
+          user: userId,
           id: 'rem-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
           created: new Date().toISOString(),
           updated: new Date().toISOString(),
@@ -141,10 +148,18 @@ export const useReminderStore = create<ReminderState>()(
       setSearchQuery: (q) => set({ searchQuery: q }),
       setSelectedTypeFilter: (t) => set({ selectedTypeFilter: t }),
       setSelectedCategoryFilter: (c) => set({ selectedCategoryFilter: c }),
+      clearUserReminders: () => set({ reminders: [] }),
+
+      getUserReminders: () => {
+        const { user, isDemoMode } = useAuthStore.getState();
+        if (isDemoMode) return DEMO_SHOWCASE_REMINDERS;
+        if (!user) return [];
+        return get().reminders.filter((r) => r.user === user.id || !r.user);
+      },
 
       getTodayReminders: () => {
         const todayStr = new Date().toISOString().split('T')[0];
-        return get().reminders.filter((r) => r.due_date === todayStr);
+        return get().getUserReminders().filter((r) => r.due_date === todayStr);
       },
 
       getUpcomingReminders: (daysLimit = 14) => {
@@ -153,20 +168,20 @@ export const useReminderStore = create<ReminderState>()(
         limitDate.setDate(limitDate.getDate() + daysLimit);
         const limitStr = limitDate.toISOString().split('T')[0];
 
-        return get().reminders.filter(
+        return get().getUserReminders().filter(
           (r) => r.due_date >= todayStr && r.due_date <= limitStr && r.status !== 'completed'
         );
       },
 
       getOverdueReminders: () => {
         const todayStr = new Date().toISOString().split('T')[0];
-        return get().reminders.filter(
+        return get().getUserReminders().filter(
           (r) => r.due_date < todayStr && r.status !== 'completed'
         );
       },
 
       getRecurringReminders: () => {
-        return get().reminders.filter((r) => r.billing_cycle && r.billing_cycle !== 'custom');
+        return get().getUserReminders().filter((r) => r.billing_cycle && r.billing_cycle !== 'custom');
       },
     }),
     {

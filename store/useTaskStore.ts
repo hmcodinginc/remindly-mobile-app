@@ -3,11 +3,12 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import pb from '../services/pocketbase';
 import { Task, TaskPriority, TaskStatus } from '../types';
+import { useAuthStore } from './useAuthStore';
 
-const INITIAL_MOCK_TASKS: Task[] = [
+export const DEMO_SHOWCASE_TASKS: Task[] = [
   {
     id: 'task-1',
-    user: 'user-1',
+    user: 'demo-user-1',
     title: 'Review Monthly Budget & Subscriptions',
     description: 'Check active subscriptions and optimize recurring expenses',
     priority: 'high',
@@ -20,11 +21,11 @@ const INITIAL_MOCK_TASKS: Task[] = [
   },
   {
     id: 'task-2',
-    user: 'user-1',
+    user: 'demo-user-1',
     title: 'Sync Mobile App Database Schema',
     description: 'Verify collection permissions and index rules for glass UI',
     priority: 'urgent',
-    due_date: new Date(Date.now() - 86400000).toISOString().split('T')[0], // Overdue task sample!
+    due_date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
     status: 'todo',
     labels: ['Development', 'Backend'],
     reminder: true,
@@ -33,7 +34,7 @@ const INITIAL_MOCK_TASKS: Task[] = [
   },
   {
     id: 'task-3',
-    user: 'user-1',
+    user: 'demo-user-1',
     title: 'Complete Weekly Workout & Cardio Log',
     description: 'Log strength training progress and set goals',
     priority: 'medium',
@@ -71,38 +72,56 @@ interface TaskState {
   setSelectedStatus: (status: TaskStatus | 'all' | 'overdue' | 'pending') => void;
 
   // Helpers
+  getUserTasks: () => Task[];
   getOverdueTasksCount: () => number;
+  clearUserTasks: () => void;
 }
 
 export const useTaskStore = create<TaskState>()(
   persist(
     (set, get) => ({
-      tasks: INITIAL_MOCK_TASKS,
+      tasks: [],
       isLoading: false,
       searchQuery: '',
       selectedPriority: 'all',
       selectedStatus: 'all',
 
       fetchTasks: async () => {
+        const { user, isDemoMode } = useAuthStore.getState();
+        if (isDemoMode) {
+          set({ tasks: DEMO_SHOWCASE_TASKS, isLoading: false });
+          return;
+        }
+
+        if (!user) {
+          set({ tasks: [], isLoading: false });
+          return;
+        }
+
         set({ isLoading: true });
         try {
           if (pb.authStore.isValid) {
-            const records = await pb.collection('tasks').getFullList({ sort: '-created' });
-            if (records.length > 0) {
-              set({ tasks: records as unknown as Task[], isLoading: false });
-              return;
-            }
+            const records = await pb.collection('tasks').getFullList({
+              filter: `user = "${user.id}"`,
+              sort: '-created',
+            });
+            set({ tasks: records as unknown as Task[], isLoading: false });
+          } else {
+            set({ isLoading: false });
           }
-          set({ isLoading: false });
         } catch (e) {
-          console.warn('PocketBase fetchTasks error (using local store):', e);
+          console.warn('PocketBase fetchTasks error (using local state):', e);
           set({ isLoading: false });
         }
       },
 
       addTask: async (taskData) => {
+        const { user } = useAuthStore.getState();
+        const userId = user?.id || taskData.user || 'user-1';
+
         const newTask: Task = {
           ...taskData,
+          user: userId,
           id: 'task-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
           created: new Date().toISOString(),
           updated: new Date().toISOString(),
@@ -110,9 +129,9 @@ export const useTaskStore = create<TaskState>()(
 
         set((state) => ({ tasks: [newTask, ...state.tasks] }));
 
-        if (pb.authStore.isValid) {
+        if (pb.authStore.isValid && user && !user.id.startsWith('demo-')) {
           try {
-            const rec = await pb.collection('tasks').create(taskData);
+            const rec = await pb.collection('tasks').create({ ...taskData, user: user.id });
             set((state) => ({
               tasks: state.tasks.map((t) => (t.id === newTask.id ? (rec as unknown as Task) : t)),
             }));
@@ -141,7 +160,7 @@ export const useTaskStore = create<TaskState>()(
       },
 
       toggleTaskStatus: async (id) => {
-        const task = get().tasks.find((t) => t.id === id);
+        const task = get().getUserTasks().find((t) => t.id === id);
         if (!task) return;
         const newStatus: TaskStatus = task.status === 'completed' ? 'todo' : 'completed';
         await get().updateTask(id, { status: newStatus });
@@ -165,9 +184,17 @@ export const useTaskStore = create<TaskState>()(
       setSearchQuery: (query) => set({ searchQuery: query }),
       setSelectedPriority: (priority) => set({ selectedPriority: priority }),
       setSelectedStatus: (status) => set({ selectedStatus: status }),
+      clearUserTasks: () => set({ tasks: [] }),
+
+      getUserTasks: () => {
+        const { user, isDemoMode } = useAuthStore.getState();
+        if (isDemoMode) return DEMO_SHOWCASE_TASKS;
+        if (!user) return [];
+        return get().tasks.filter((t) => t.user === user.id || !t.user);
+      },
 
       getOverdueTasksCount: () => {
-        return get().tasks.filter((t) => isTaskOverdue(t)).length;
+        return get().getUserTasks().filter((t) => isTaskOverdue(t)).length;
       },
     }),
     {

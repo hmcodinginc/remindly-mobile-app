@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { router } from 'expo-router';
 
-// Configure notification behavior
+// Configure notification behavior for active sound, banner, and badge
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -14,6 +14,17 @@ Notifications.setNotificationHandler({
 
 export const requestNotificationPermissions = async () => {
   if (Platform.OS === 'web') return true;
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Remindly Alerts',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#5B5CE2',
+      sound: 'default',
+    });
+  }
+
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
   if (existingStatus !== 'granted') {
@@ -34,7 +45,6 @@ export const scheduleLocalNotification = async (
     if (!hasPermission && Platform.OS !== 'web') return null;
 
     if (Platform.OS === 'web') {
-      // In web browser environment, show standard notification if supported or fallback cleanly
       if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
         new Notification(title, { body, data });
       }
@@ -44,7 +54,7 @@ export const scheduleLocalNotification = async (
       content: {
         title,
         body,
-        sound: true,
+        sound: 'default',
         data: data || {},
       },
       trigger: {
@@ -58,17 +68,35 @@ export const scheduleLocalNotification = async (
   }
 };
 
-// 1 Week Before Subscription Renewal Alert
-export const scheduleOneWeekRenewalAlert = async (subscriptionId: string, subscriptionName: string, renewalDate: string, amount: number) => {
+export const testSoundNotification = async () => {
   return await scheduleLocalNotification(
-    '📅 1 Week Advance Renewal Notice',
-    `Your ${subscriptionName} subscription ($${amount.toFixed(2)}) will renew in 7 days on ${renewalDate}.`,
+    '🔔 Sound & Reminder Test',
+    'Notification sound alert test succeeded! Scheduled reminder delivered on time.',
+    { target_type: 'test', deep_link: '/(tabs)/dashboard' },
+    2
+  );
+};
+
+export const scheduleOneWeekRenewalAlert = async (
+  subscriptionId: string,
+  subscriptionName: string,
+  renewalDate: string,
+  amount: number
+) => {
+  return await scheduleLocalNotification(
+    '📅 Advance Renewal Notice',
+    `Your ${subscriptionName} subscription ($${amount.toFixed(2)}) is due for renewal on ${renewalDate}.`,
     { target_type: 'subscription', target_id: subscriptionId, deep_link: '/(tabs)/subscriptions' },
     3
   );
 };
 
-export const scheduleSubscriptionRenewalAlert = async (subscriptionId: string, subscriptionName: string, renewalDate: string, amount: number) => {
+export const scheduleSubscriptionRenewalAlert = async (
+  subscriptionId: string,
+  subscriptionName: string,
+  renewalDate: string,
+  amount: number
+) => {
   return await scheduleLocalNotification(
     '🔔 Subscription Renewal Alert',
     `Your ${subscriptionName} subscription ($${amount.toFixed(2)}) is renewing on ${renewalDate}.`,
@@ -99,12 +127,11 @@ export const scheduleHabitReminderAlert = async (habitId: string, habitTitle: st
   return await scheduleLocalNotification(
     '🔥 Keep Your Streak Alive!',
     `Don't forget to check in on "${habitTitle}". Current streak: ${currentStreak} days!`,
-    { target_type: 'habit', target_id: habitId, deep_link: '/(tabs)/routines' },
+    { target_type: 'habit', target_id: habitId, deep_link: '/(tabs)/dashboard' },
     4
   );
 };
 
-// Setup deep link response listener
 export const setupNotificationResponseListener = () => {
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const data = response.notification.request.content.data;
