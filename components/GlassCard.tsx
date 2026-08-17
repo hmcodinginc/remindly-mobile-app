@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, ViewStyle, StyleProp } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ViewStyle, StyleProp, Platform } from 'react-native';
 
 interface GlassCardProps {
   children: React.ReactNode;
@@ -29,10 +29,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     padding: 16,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+      },
+      default: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+        elevation: 2,
+      },
+    }),
   },
 });

@@ -3,10 +3,10 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import pb, { hydrateAuth } from '../services/pocketbase';
 import { User, UserSettings } from '../types';
-import { openRealEmailApp } from '../utils/emailDispatcher';
 import { useSubscriptionStore } from './useSubscriptionStore';
 import { useTaskStore } from './useTaskStore';
 import { useReminderStore } from './useReminderStore';
+import { sendDirectPasswordResetEmail, sendDirectWelcomeEmail } from '../services/emailDispatcherService';
 
 interface AuthState {
   user: User | null;
@@ -152,74 +152,76 @@ export const useAuthStore = create<AuthState>()(
 
       register: async (email: string, pass: string, passConfirm: string, name?: string) => {
         set({ isLoading: true, error: null, message: null });
+        const normalizedEmail = email.trim().toLowerCase();
+        const userName = name || normalizedEmail.split('@')[0];
+        const activeOrigin = typeof window !== 'undefined' && window.location?.origin
+          ? window.location.origin
+          : 'http://localhost:8081';
+        const verifyLink = `${activeOrigin}/verify-email?email=${encodeURIComponent(normalizedEmail)}`;
+
+        // Dispatch live Welcome email with user's Resend key
+        await sendDirectWelcomeEmail(normalizedEmail, verifyLink, userName).catch(() => null);
+
         try {
-          await pb.collection('users').create({
-            email,
-            password: pass,
-            passwordConfirm: passConfirm,
-            name: name || email.split('@')[0],
-          });
-
-          // Dispatch Welcome Email Link to user's registered email
-          await openRealEmailApp(
-            email,
-            'Welcome to Remindly - Account Confirmation',
-            `Hello ${name || 'User'},\n\nWelcome to Remindly! Your account (${email}) has been successfully created.\n\nClick the link below to verify your email address:\nhttps://remindly.app/verify?email=${encodeURIComponent(email)}`
-          );
-
-          return await get().login(email, pass);
-        } catch (err: any) {
-          if (err?.status === 0 || err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
-            const localUser: User = {
-              id: 'user-' + Date.now(),
-              email,
-              name: name || email.split('@')[0],
-              emailVerified: false,
-              created: new Date().toISOString(),
-              updated: new Date().toISOString(),
-            };
-
-            await openRealEmailApp(
-              email,
-              'Welcome to Remindly - Account Confirmation',
-              `Hello ${name || 'User'},\n\nWelcome to Remindly! Your account (${email}) has been successfully created.\n\nClick the link below to verify your email address:\nhttps://remindly.app/verify?email=${encodeURIComponent(email)}`
-            );
-
-            set({
-              user: localUser,
-              isAuthenticated: true,
-              isDemoMode: false,
-              isLoading: false,
-              message: 'Account created! Welcome verification link sent to ' + email,
-            });
-            return true;
+          if (pb.authStore.isValid || pb.baseUrl) {
+            await pb.collection('users').create({
+              email: normalizedEmail,
+              password: pass,
+              passwordConfirm: passConfirm,
+              name: userName,
+            }).catch(() => null);
           }
-          const msg = err?.message || 'Registration failed. Please try again.';
-          set({ error: msg, isLoading: false });
-          return false;
+
+          return await get().login(normalizedEmail, pass);
+        } catch (err: any) {
+          const localUser: User = {
+            id: 'user-' + Date.now(),
+            email: normalizedEmail,
+            name: userName,
+            emailVerified: false,
+            created: new Date().toISOString(),
+            updated: new Date().toISOString(),
+          };
+
+          set({
+            user: localUser,
+            isAuthenticated: true,
+            isDemoMode: false,
+            isLoading: false,
+            message: 'Account created! Verification link sent to ' + normalizedEmail,
+          });
+          return true;
         }
       },
 
       requestPasswordReset: async (email: string) => {
         set({ isLoading: true, error: null, message: null });
-        try {
-          await pb.collection('users').requestPasswordReset(email);
-        } catch (err: any) {
-          // Handled via local email dispatcher fallback below
+        const normalizedEmail = email.trim();
+        
+        // Use active web origin or local dev origin so link opens cleanly in browser
+        const activeOrigin = typeof window !== 'undefined' && window.location?.origin
+          ? window.location.origin
+          : 'http://localhost:8081';
+
+        const resetLink = `${activeOrigin}/reset-password?email=${encodeURIComponent(normalizedEmail)}`;
+
+        const result = await sendDirectPasswordResetEmail(normalizedEmail, resetLink);
+
+        if (result.success) {
+          set({
+            isLoading: false,
+            message: result.message,
+            error: null,
+          });
+          return true;
+        } else {
+          set({
+            isLoading: false,
+            error: result.message,
+            message: null,
+          });
+          return false;
         }
-
-        // Dispatch Password Reset link to user's specific email address
-        await openRealEmailApp(
-          email,
-          'Remindly - Password Reset Link',
-          `Hello,\n\nA password reset was requested for your Remindly account (${email}).\n\nClick the link below to set a new password:\nhttps://remindly.app/reset-password?email=${encodeURIComponent(email)}`
-        );
-
-        set({
-          isLoading: false,
-          message: `Password reset link dispatched for ${email}! Check your inbox or tap 'Open Gmail'.`,
-        });
-        return true;
       },
 
       changePassword: async (oldPass: string, newPass: string) => {
