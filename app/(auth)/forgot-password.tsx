@@ -11,10 +11,10 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/useAuthStore';
+import RemindlyLogo from '../../components/RemindlyLogo';
 import GlassCard from '../../components/GlassCard';
 import GlassInput from '../../components/GlassInput';
 import GlassButton from '../../components/GlassButton';
-import { openRealEmailApp } from '../../utils/emailDispatcher';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -23,13 +23,16 @@ export default function ForgotPasswordScreen() {
   const [localError, setLocalError] = useState<string | null>(null);
 
   const handleResetPassword = async () => {
-    if (!email) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
       setLocalError('Please enter your registered email address.');
       return;
     }
     setLocalError(null);
     clearError();
-    await requestPasswordReset(email.trim());
+
+    // Directly request password reset email dispatch
+    await requestPasswordReset(trimmedEmail);
   };
 
   const displayError = localError || error;
@@ -41,33 +44,36 @@ export default function ForgotPasswordScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#F8FAFC" />
+          <Ionicons name="arrow-back" size={20} color="#171717" />
         </TouchableOpacity>
 
         <View style={styles.header}>
-          <Text style={styles.title}>Reset Password</Text>
+          <View style={styles.logoWrapper}>
+            <RemindlyLogo size={64} showBackground={false} />
+          </View>
+          <Text style={styles.title}>Forgot Password</Text>
           <Text style={styles.subtitle}>
-            Enter your account email to receive a password reset link
+            Enter your email address to receive a secure password reset link in your inbox
           </Text>
         </View>
 
-        <GlassCard glow style={styles.card}>
+        <GlassCard style={styles.card}>
           {displayError && (
             <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={18} color="#F87171" />
+              <Ionicons name="alert-circle" size={18} color="#EF4444" />
               <Text style={styles.errorText}>{displayError}</Text>
             </View>
           )}
 
           {message && (
             <View style={styles.messageBox}>
-              <Ionicons name="checkmark-circle" size={18} color="#34D399" />
+              <Ionicons name="checkmark-circle" size={18} color="#16A34A" />
               <Text style={styles.messageText}>{message}</Text>
             </View>
           )}
 
           <GlassInput
-            label="Registered Email"
+            label="Registered Email Address"
             placeholder="name@example.com"
             value={email}
             onChangeText={(t) => {
@@ -81,28 +87,18 @@ export default function ForgotPasswordScreen() {
           />
 
           <GlassButton
-            title="Send Reset Link"
+            title="Send Reset Password Link"
             onPress={handleResetPassword}
             loading={isLoading}
             variant="primary"
             style={styles.resetBtn}
           />
 
-          {message && (
-            <GlassButton
-              title="Open Gmail / Mail App"
-              onPress={() => openRealEmailApp(email, 'Remindly Password Reset Link', `Hello,\n\nReset link for ${email}:\nhttps://remindly.app/reset-password?email=${encodeURIComponent(email)}`)}
-              variant="secondary"
-              icon="mail-outline"
-              style={{ marginTop: 10 }}
-            />
-          )}
-
           <GlassButton
             title="Back to Sign In"
             onPress={() => router.push('/(auth)/login')}
             variant="ghost"
-            style={{ marginTop: 8 }}
+            style={{ marginTop: 10 }}
           />
         </GlassCard>
       </ScrollView>
@@ -113,75 +109,82 @@ export default function ForgotPasswordScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070A14',
+    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
     justifyContent: 'center',
-    maxWidth: 480,
+    maxWidth: 460,
     width: '100%',
     alignSelf: 'center',
   },
   backBtn: {
-    marginBottom: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    marginBottom: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F7F8FA',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
   header: {
-    marginBottom: 24,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  logoWrapper: {
+    marginBottom: 8,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#F8FAFC',
+    fontSize: 26,
+    fontWeight: '700',
+    color: '#171717',
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#94A3B8',
-    marginTop: 4,
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 2,
+    textAlign: 'center',
   },
   card: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    backgroundColor: '#FEF2F2',
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderColor: '#FCA5A5',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 14,
     gap: 8,
   },
   errorText: {
-    color: '#F87171',
+    color: '#EF4444',
     fontSize: 13,
     flex: 1,
   },
   messageBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    backgroundColor: '#DCFCE7',
     borderWidth: 1,
-    borderColor: 'rgba(52, 211, 153, 0.3)',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderColor: '#86EFAC',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 14,
     gap: 8,
   },
   messageText: {
-    color: '#34D399',
+    color: '#15803D',
     fontSize: 13,
     flex: 1,
   },
   resetBtn: {
-    marginTop: 8,
+    marginTop: 6,
   },
 });
